@@ -9,6 +9,7 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   add: (item: { id: number; name: string }) => void;
+  reset: () => void;
 }
 
 export const useCartStore = create<CartState>((set) => ({
@@ -25,4 +26,5 @@ export const useCartStore = create<CartState>((set) => ({
       }
       return { items: [...state.items, { ...item, quantity: 1 }] };
     }),
+  reset: () => set({ items: [] }),
 }));
