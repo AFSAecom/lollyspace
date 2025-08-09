@@ -1,8 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
+import { PromotionId } from '@/types/promotion';
 
 export interface Promotion {
-  id: number;
+  id: PromotionId;
   type: string;
+  condition_json: any;
+  starts_at: string;
+  ends_at: string;
+  active: boolean;
+}
+
+export interface PromotionInput {
+  id?: PromotionId;
+  type: string;
+  condition_json: any;
   starts_at: string;
   ends_at: string;
   active: boolean;
@@ -27,7 +38,7 @@ export function usePromotions() {
   return useQuery({ queryKey: ['promotions'], queryFn: fetchPromotions });
 }
 
-export async function updatePromotion(id: number, active: boolean) {
+export async function updatePromotion(id: PromotionId, active: boolean) {
   const res = await fetch(`${baseUrl}/rest/v1/promotions?id=eq.${id}`, {
     method: 'PATCH',
     headers,
@@ -36,5 +47,49 @@ export async function updatePromotion(id: number, active: boolean) {
   if (!res.ok) {
     throw new Error(await res.text());
   }
+}
+
+export async function deletePromotion(id: PromotionId) {
+  const res = await fetch(`${baseUrl}/rest/v1/promotions?id=eq.${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+}
+
+export async function savePromotion(promo: PromotionInput) {
+  const method = promo.id ? 'PATCH' : 'POST';
+  const url = promo.id
+    ? `${baseUrl}/rest/v1/promotions?id=eq.${promo.id}`
+    : `${baseUrl}/rest/v1/promotions`;
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: JSON.stringify(promo),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+}
+
+export interface PromotionItem {
+  product_variant_id: number;
+  quantity: number;
+  unit_price_tnd: number;
+  discount_tnd?: number;
+}
+
+export async function applyPromotions(items: PromotionItem[]) {
+  const res = await fetch(`${baseUrl}/functions/v1/apply_promotions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as { items: PromotionItem[] };
 }
 
