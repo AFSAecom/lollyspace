@@ -80,6 +80,15 @@ serve(async (req) => {
 
       return { order_id: orderId, order_code: code, client_id: clientId };
     });
+    try {
+      await fetch(new URL('/compute_commissions', req.url).toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: result.order_id }),
+      });
+    } catch (_) {
+      // ignore commission errors
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },
