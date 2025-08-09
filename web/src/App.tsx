@@ -19,10 +19,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/client" element={<Client />} />
-          <Route path="/advisor" element={<Advisor />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/products" element={<AdminProducts />} />
-            <Route path="/admin/promotions" element={<AdminPromotions />} />
+          <Route path="/advisor/*" element={<Advisor />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/promotions" element={<AdminPromotions />} />
           </Routes>
         </main>
       </div>
