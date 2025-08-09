@@ -29,3 +29,7 @@ npm run dev
 ## Supabase
 Migrations reside in `supabase/migrations` and seeds in `supabase/seeds`.
 Run `supabase db reset` to apply them locally.
+
+## Deployment
+
+The repository can be linked to Vercel to automatically generate preview deployments for each pull request. When importing the project on Vercel, set the root directory to `web`.
