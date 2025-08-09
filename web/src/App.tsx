@@ -3,6 +3,8 @@ import Home from './pages/Home';
 import Client from './pages/Client';
 import Advisor from './pages/Advisor';
 import Admin from './pages/Admin';
+import AdminProducts from './pages/AdminProducts';
+import AdminPromotions from './pages/AdminPromotions';
 
 export default function App() {
   return (
@@ -18,9 +20,11 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/client" element={<Client />} />
           <Route path="/advisor" element={<Advisor />} />
-          <Route path="/admin" element={<Admin />} />
-        </Routes>
-      </main>
-    </div>
-  );
-}
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/promotions" element={<AdminPromotions />} />
+          </Routes>
+        </main>
+      </div>
+    );
+  }
