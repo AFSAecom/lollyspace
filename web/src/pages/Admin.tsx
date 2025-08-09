@@ -57,6 +57,7 @@ export default function Admin() {
         <Link to="/admin/products">Produits</Link>
         <Link to="/admin/promotions">Promotions</Link>
         <Link to="/admin/stocks">Stocks</Link>
+        <Link to="/admin/commissions">Commissions</Link>
       </nav>
       <div className="mt-8 grid gap-8 md:grid-cols-2">
         <div className="w-full h-64">
