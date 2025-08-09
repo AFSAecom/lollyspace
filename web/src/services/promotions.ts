@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { PromotionId } from '@/types/promotion';
 
 export interface Promotion {
-  id: number;
+  id: PromotionId;
   type: string;
   condition_json: any;
   starts_at: string;
@@ -10,7 +11,7 @@ export interface Promotion {
 }
 
 export interface PromotionInput {
-  id?: number;
+  id?: PromotionId;
   type: string;
   condition_json: any;
   starts_at: string;
@@ -37,11 +38,21 @@ export function usePromotions() {
   return useQuery({ queryKey: ['promotions'], queryFn: fetchPromotions });
 }
 
-export async function updatePromotion(id: number, active: boolean) {
+export async function updatePromotion(id: PromotionId, active: boolean) {
   const res = await fetch(`${baseUrl}/rest/v1/promotions?id=eq.${id}`, {
     method: 'PATCH',
     headers,
     body: JSON.stringify({ active }),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+}
+
+export async function deletePromotion(id: PromotionId) {
+  const res = await fetch(`${baseUrl}/rest/v1/promotions?id=eq.${id}`, {
+    method: 'DELETE',
+    headers,
   });
   if (!res.ok) {
     throw new Error(await res.text());

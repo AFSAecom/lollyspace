@@ -1,17 +1,24 @@
 import {
   usePromotions,
   updatePromotion,
+  deletePromotion,
   savePromotion,
-  Promotion,
   PromotionInput,
 } from '../services/promotions';
+import { Promotion, PromotionId } from '@/types/promotion';
 import { useState } from 'react';
+
+type PromotionWithApi = Promotion & {
+  condition_json?: any;
+  starts_at: string;
+  ends_at: string;
+};
 
 function PromotionForm({
   promotion,
   onClose,
 }: {
-  promotion?: Promotion;
+  promotion?: PromotionWithApi;
   onClose: () => void;
 }) {
   const [type, setType] = useState<PromotionInput['type']>(
@@ -37,7 +44,7 @@ function PromotionForm({
   );
   const [active, setActive] = useState(promotion?.active ?? true);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     let condition_json: any;
     if (type === 'discount') {
@@ -51,7 +58,7 @@ function PromotionForm({
       condition_json = {
         product_variant_ids: packIds
           .split(',')
-          .map((id) => Number(id.trim()))
+          .map((id: string) => Number(id.trim()))
           .filter(Boolean),
         price: Number(packPrice),
       };
@@ -65,7 +72,7 @@ function PromotionForm({
       active,
     });
     onClose();
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2">
@@ -73,7 +80,9 @@ function PromotionForm({
         Type
         <select
           value={type}
-          onChange={(e) => setType(e.target.value as PromotionInput['type'])}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            setType(e.target.value as PromotionInput['type'])
+          }
           className="border p-1 ml-2"
           disabled={!!promotion}
         >
@@ -88,7 +97,9 @@ function PromotionForm({
           <input
             type="number"
             value={productVariantId}
-            onChange={(e) => setProductVariantId(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setProductVariantId(e.target.value)
+            }
             className="border p-1 ml-2"
             required
           />
@@ -100,7 +111,9 @@ function PromotionForm({
           <input
             type="number"
             value={percent}
-            onChange={(e) => setPercent(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setPercent(e.target.value)
+            }
             className="border p-1 ml-2"
             required
           />
@@ -113,7 +126,9 @@ function PromotionForm({
             <input
               type="text"
               value={packIds}
-              onChange={(e) => setPackIds(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPackIds(e.target.value)
+              }
               className="border p-1 ml-2"
               required
             />
@@ -123,7 +138,9 @@ function PromotionForm({
             <input
               type="number"
               value={packPrice}
-              onChange={(e) => setPackPrice(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPackPrice(e.target.value)
+              }
               className="border p-1 ml-2"
               required
             />
@@ -135,7 +152,9 @@ function PromotionForm({
         <input
           type="date"
           value={startsAt}
-          onChange={(e) => setStartsAt(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setStartsAt(e.target.value)
+          }
           className="border p-1 ml-2"
           required
         />
@@ -145,7 +164,9 @@ function PromotionForm({
         <input
           type="date"
           value={endsAt}
-          onChange={(e) => setEndsAt(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setEndsAt(e.target.value)
+          }
           className="border p-1 ml-2"
           required
         />
@@ -155,7 +176,9 @@ function PromotionForm({
         <input
           type="checkbox"
           checked={active}
-          onChange={(e) => setActive(e.target.checked)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setActive(e.target.checked)
+          }
           className="ml-2"
         />
       </label>
@@ -173,12 +196,26 @@ function PromotionForm({
 
 export default function AdminPromotions() {
   const { data: promotions, refetch } = usePromotions();
-  const [editing, setEditing] = useState<Promotion | null | undefined>(undefined);
+  const [editing, setEditing] = useState<PromotionWithApi | null | undefined>(
+    undefined,
+  );
 
-  async function toggle(promo: Promotion) {
-    await updatePromotion(promo.id, !promo.active);
+  const handleEdit = (id: PromotionId) => {
+    const promo = (promotions as PromotionWithApi[] | undefined)?.find(
+      (p: PromotionWithApi) => p.id === id,
+    );
+    setEditing(promo ?? null);
+  };
+
+  const handleDelete = async (id: PromotionId) => {
+    await deletePromotion(id);
     refetch();
-  }
+  };
+
+  const handleToggle = async (id: PromotionId, nextActive: boolean) => {
+    await updatePromotion(id, nextActive);
+    refetch();
+  };
 
   return (
     <div>
@@ -201,21 +238,28 @@ export default function AdminPromotions() {
         </button>
       )}
       <ul className="mt-4 flex flex-col gap-1">
-        {promotions?.map((p) => (
+        {(promotions as PromotionWithApi[] | undefined)?.map(
+          (p: PromotionWithApi) => (
           <li key={p.id} className="flex justify-between">
             <span>{p.type}</span>
             <div className="flex gap-2">
               <button
-                onClick={() => toggle(p)}
+                onClick={() => handleToggle(p.id, !p.active)}
                 className="text-sm text-primary"
               >
                 {p.active ? 'Désactiver' : 'Activer'}
               </button>
               <button
-                onClick={() => setEditing(p)}
+                onClick={() => handleEdit(p.id)}
                 className="text-sm text-primary"
               >
                 Éditer
+              </button>
+              <button
+                onClick={() => handleDelete(p.id)}
+                className="text-sm text-primary"
+              >
+                Supprimer
               </button>
             </div>
           </li>
