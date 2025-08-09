@@ -5,6 +5,7 @@ import Advisor from './pages/Advisor';
 import Admin from './pages/Admin';
 import AdminProducts from './pages/AdminProducts';
 import AdminPromotions from './pages/AdminPromotions';
+import AdminStocks from './pages/AdminStocks';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/products" element={<AdminProducts />} />
           <Route path="/admin/promotions" element={<AdminPromotions />} />
+          <Route path="/admin/stocks" element={<AdminStocks />} />
           </Routes>
         </main>
       </div>
