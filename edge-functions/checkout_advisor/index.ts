@@ -29,9 +29,25 @@ serve(async (req) => {
     const payload = await req.json();
     const data = bodySchema.parse(payload);
 
-    const total = data.items.reduce(
-      (sum, i) => sum + (i.unit_price_tnd - (i.discount_tnd ?? 0)) * i.quantity,
-      0
+    const promoRes = await fetch(
+      new URL('/apply_promotions', req.url).toString(),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: data.items }),
+      },
+    );
+    if (!promoRes.ok) {
+      throw new Error(await promoRes.text());
+    }
+    const { items } = (await promoRes.json()) as {
+      items: z.infer<typeof itemSchema>[];
+    };
+
+    const total = items.reduce(
+      (sum: number, i: any) =>
+        sum + (i.unit_price_tnd - (i.discount_tnd ?? 0)) * i.quantity,
+      0,
     );
     const code = crypto.randomUUID();
 
@@ -55,7 +71,7 @@ serve(async (req) => {
       `;
       const orderId = order[0].id;
 
-      for (const item of data.items) {
+      for (const item of items) {
         await tx`
           insert into order_items (order_id, product_variant_id, quantity, unit_price_tnd, discount_tnd)
           values (${orderId}, ${item.product_variant_id}, ${item.quantity}, ${item.unit_price_tnd}, ${item.discount_tnd ?? 0})
