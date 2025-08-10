@@ -1,13 +1,13 @@
-import { useProductVariants, importStock, ProductVariant } from '../services/stock';
+import { useProductVariants, importStock, StockVariant } from '../services/stock';
 import { useState } from 'react';
 
 export default function AdminStocks() {
   const { data: variants, refetch } = useProductVariants();
   const [loading, setLoading] = useState(false);
 
-  const ruptures = variants?.filter(v => v.stock_qty === 0) ?? [];
-  const low = variants?.filter(v => v.stock_qty > 0 && v.stock_qty < v.stock_min) ?? [];
-  const ok = variants?.filter(v => v.stock_qty >= v.stock_min) ?? [];
+  const ruptures = variants?.filter(v => v.stockQty === 0) ?? [];
+  const low = variants?.filter(v => v.stockQty > 0 && v.stockQty < v.stockMin) ?? [];
+  const ok = variants?.filter(v => v.stockQty >= v.stockMin) ?? [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,14 +24,14 @@ export default function AdminStocks() {
     }
   }
 
-  function renderList(title: string, list: ProductVariant[]) {
+  function renderList(title: string, list: StockVariant[]) {
     return (
       <div className="mt-6">
         <h2 className="font-semibold">{title}</h2>
         <ul className="mt-2 flex flex-col gap-1">
           {list.map(v => (
             <li key={v.id}>
-              {v.products.inspired_name} {v.volume_ml}ml ({v.stock_qty})
+              {v.products.inspiredName} {v.sizeMl}ml ({v.stockQty})
             </li>
           ))}
         </ul>

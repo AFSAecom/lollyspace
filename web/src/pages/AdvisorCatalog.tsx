@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import SearchBarDual from '@/components/SearchBarDual';
 import VolumeButtons from '@/components/VolumeButtons';
-import { useSearchProducts, Product, ProductVariant } from '@/services/products';
+import { useSearchProducts, Product } from '@/services/products';
 import { useCartStore } from '@/stores/cart';
 import type { CartItem } from '@/types/cart';
+import type { ProductVariant } from '@/types/product';
 
 export default function AdvisorCatalog() {
   const [search, setSearch] = useState({
@@ -33,7 +34,7 @@ export default function AdvisorCatalog() {
       id: p.id,
       name: p.inspired_name,
       product_variant_id: v.id,
-      price_tnd: v.price_tnd,
+      price_tnd: v.priceTnd,
       discount_tnd: 0,
     };
     add(item);

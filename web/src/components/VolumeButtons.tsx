@@ -1,12 +1,8 @@
-interface Variant {
-  id: number;
-  volume_ml: number;
-  price_tnd: number;
-}
+import type { ProductVariant } from '@/types/product';
 
 interface Props {
-  variants: Variant[];
-  onSelect: (variant: Variant) => void;
+  variants: ProductVariant[];
+  onSelect: (variant: ProductVariant) => void;
 }
 
 export default function VolumeButtons({ variants, onSelect }: Props) {
@@ -18,7 +14,7 @@ export default function VolumeButtons({ variants, onSelect }: Props) {
           onClick={() => onSelect(v)}
           className="px-2 py-1 border rounded"
         >
-          {v.volume_ml} ml - {v.price_tnd} TND
+          {v.sizeMl} ml - {v.priceTnd} TND
         </button>
       ))}
     </div>

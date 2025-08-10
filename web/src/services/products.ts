@@ -1,11 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-
-export interface ProductVariant {
-  id: number;
-  volume_ml: number;
-  price_tnd: number;
-  product_id: number;
-}
+import type { ProductVariant } from '@/types/product';
 
 export interface Product {
   id: number;
@@ -22,6 +16,28 @@ export interface SearchParams {
   season?: string;
   family?: string;
   page: number;
+}
+
+function fromApiVariant(row: any): ProductVariant {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    sizeMl: row.volume_ml,
+    priceTnd: row.price_tnd,
+    discountTnd: row.discount_tnd ?? undefined,
+    name: row.name ?? undefined,
+  };
+}
+
+export function toApiVariant(variant: ProductVariant) {
+  return {
+    id: variant.id,
+    product_id: variant.productId,
+    volume_ml: variant.sizeMl,
+    price_tnd: variant.priceTnd,
+    discount_tnd: variant.discountTnd,
+    name: variant.name,
+  };
 }
 
 async function searchProducts(params: SearchParams) {
@@ -42,7 +58,7 @@ async function searchProducts(params: SearchParams) {
   const ids = products.map((p) => p.id);
   if (ids.length === 0) return products;
   const varRes = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/product_variants?select=id,product_id,volume_ml,price_tnd&product_id=in.(${ids.join(',')})`,
+    `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/product_variants?select=id,product_id,volume_ml,price_tnd,discount_tnd,name&product_id=in.(${ids.join(',')})`,
     {
       headers: {
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -51,11 +67,11 @@ async function searchProducts(params: SearchParams) {
     },
   );
   if (varRes.ok) {
-    const vars = (await varRes.json()) as ProductVariant[];
+    const vars = ((await varRes.json()) as any[]).map(fromApiVariant);
     const byProduct: Record<number, ProductVariant[]> = {};
     for (const v of vars) {
-      byProduct[v.product_id] = byProduct[v.product_id] || [];
-      byProduct[v.product_id].push(v);
+      byProduct[v.productId] = byProduct[v.productId] || [];
+      byProduct[v.productId].push(v);
     }
     products.forEach((p) => {
       p.variants = byProduct[p.id] || [];

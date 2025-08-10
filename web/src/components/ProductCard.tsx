@@ -1,16 +1,11 @@
 import VolumeButtons from './VolumeButtons';
-
-interface Variant {
-  id: number;
-  volume_ml: number;
-  price_tnd: number;
-}
+import type { ProductVariant } from '@/types/product';
 
 interface Props {
   name: string;
   brand: string;
-  variants: Variant[];
-  onAdd: (variant: Variant) => void;
+  variants: ProductVariant[];
+  onAdd: (variant: ProductVariant) => void;
 }
 
 export default function ProductCard({ name, brand, variants, onAdd }: Props) {

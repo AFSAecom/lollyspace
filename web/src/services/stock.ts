@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import type { ProductVariant } from '@/types/product';
 
-export interface ProductVariant {
-  id: number;
-  variant_code: string;
-  volume_ml: number;
-  stock_qty: number;
-  stock_min: number;
-  products: { inspired_name: string };
+export interface StockVariant extends ProductVariant {
+  variantCode: string;
+  stockQty: number;
+  stockMin: number;
+  products: { inspiredName: string };
 }
 
 const baseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -15,7 +14,22 @@ const headers = {
   Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
 };
 
-async function fetchVariants() {
+function fromApiStockVariant(row: any): StockVariant {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    sizeMl: row.volume_ml,
+    priceTnd: row.price_tnd,
+    discountTnd: row.discount_tnd ?? undefined,
+    name: row.name ?? undefined,
+    variantCode: row.variant_code,
+    stockQty: row.stock_qty,
+    stockMin: row.stock_min,
+    products: { inspiredName: row.products?.inspired_name },
+  };
+}
+
+async function fetchVariants(): Promise<StockVariant[]> {
   const res = await fetch(
     `${baseUrl}/rest/v1/product_variants?select=*,products(inspired_name)`,
     { headers }
@@ -23,7 +37,8 @@ async function fetchVariants() {
   if (!res.ok) {
     throw new Error(await res.text());
   }
-  return (await res.json()) as ProductVariant[];
+  const data = (await res.json()) as any[];
+  return data.map(fromApiStockVariant);
 }
 
 export function useProductVariants() {
