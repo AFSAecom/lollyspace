@@ -50,7 +50,7 @@ serve(async (req) => {
         }
         try {
           const variant = await tx`
-            select id, stock_qty
+            select id
             from product_variants
             where variant_code = ${r.variant_code}
           `;
@@ -59,24 +59,21 @@ serve(async (req) => {
             continue;
           }
           const variantId = variant[0].id as number;
-          const oldQty = variant[0].stock_qty as number;
-
-          await tx`
-            update product_variants
-            set stock_qty = ${r.stock_qty}, updated_at = now()
-            where id = ${variantId}
+          const stockRow = await tx`
+            select stock_current from variant_stocks where variant_id = ${variantId}
           `;
+          const oldQty = stockRow.length ? (stockRow[0].stock_current as number) : 0;
 
           await tx`
-            insert into variant_stocks (product_variant_id, qty)
+            insert into variant_stocks (variant_id, stock_current)
             values (${variantId}, ${r.stock_qty})
-            on conflict (product_variant_id) do update set qty = excluded.qty, updated_at = now()
+            on conflict (variant_id) do update set stock_current = excluded.stock_current, updated_at = now()
           `;
 
           const delta = r.stock_qty - oldQty;
           if (delta !== 0) {
             await tx`
-              insert into stock_adjustments (product_variant_id, qty_delta, stock_import_log_id)
+              insert into stock_adjustments (variant_id, qty_delta, stock_import_log_id)
               values (${variantId}, ${delta}, ${logId})
             `;
           }
