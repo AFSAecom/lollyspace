@@ -35,6 +35,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -49,34 +50,49 @@ jobs:
         run: npm run build
         working-directory: web
 
-      - name: Ensure Playwright is runnable or skip
-        id: pw-check
+      - name: Configure npm registry + retries
+        run: |
+          npm config set registry "https://registry.npmjs.org/"
+          npm config set @playwright:registry "https://registry.npmjs.org/"
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-maxtimeout 60000
+        working-directory: web
+
+      - id: npm-registry
+        name: Check npm registry access (playwright)
         shell: bash
         run: |
-          npm config set registry "https://registry.npmjs.org/" >/dev/null 2>&1 || true
-          npm config set @playwright:registry "https://registry.npmjs.org/" >/dev/null 2>&1 || true
-          # tenter une résolution rapide ; si ça échoue, on skip
-          node -e "require.resolve('@playwright/test/package.json')" \
-            && echo 'ok=true' >> "$GITHUB_OUTPUT" \
-            || echo 'ok=false' >> "$GITHUB_OUTPUT"
+          set -e
+          URL="https://registry.npmjs.org/@playwright%2Ftest"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+          echo "http_code=$CODE"
+          if [ "$CODE" = "200" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "status=$CODE" >> "$GITHUB_OUTPUT"
+          fi
         working-directory: web
 
       - name: Install Playwright browsers
-        if: steps.pw-check.outputs.ok == 'true'
+        if: steps.npm-registry.outputs.ok == 'true'
         run: npx --yes playwright@1.54.2 install --with-deps
         working-directory: web
 
       - name: Run E2E tests
-        if: steps.pw-check.outputs.ok == 'true'
-        run: npx --yes @playwright/test@1.54.2 test --reporter=line
+        if: steps.npm-registry.outputs.ok == 'true'
+        run: |
+          npx --yes @playwright/test@1.54.2 test --reporter=line
         working-directory: web
 
-      - name: Skip E2E (Playwright not available)
-        if: steps.pw-check.outputs.ok != 'true'
-        run: echo "::warning::E2E skipped: Playwright not available on CI runner."
+      - name: Skip E2E (npm registry blocked)
+        if: steps.npm-registry.outputs.ok != 'true'
+        run: echo "::warning::E2E skipped: npm registry returned status ${{ steps.npm-registry.outputs.status || 'unknown' }}."
+        working-directory: web
 
       - name: Upload Playwright report
-        if: always() && steps.pw-check.outputs.ok == 'true'
+        if: always() && steps.npm-registry.outputs.ok == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report

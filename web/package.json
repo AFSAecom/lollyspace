@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "npx --yes @playwright/test test --reporter=line"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
