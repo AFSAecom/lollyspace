@@ -76,7 +76,7 @@ export async function savePromotion(promo: PromotionInput) {
 
 export interface PromotionItem {
   product_variant_id: number;
-  quantity: number;
+  qty: number;
   unit_price_tnd: number;
   discount_tnd?: number;
 }

@@ -4,6 +4,7 @@ import AdvisorFavorites from './AdvisorFavorites';
 import AdvisorDashboard from './AdvisorDashboard';
 import AdvisorHistory from './AdvisorHistory';
 import AdvisorCart from './AdvisorCart';
+import AdvisorCheckout from './AdvisorCheckout';
 import { useCartStore } from '../stores/cart';
 import { clearLocalDb } from '../services/localDb';
 
@@ -29,6 +30,7 @@ export default function Advisor() {
         <NavLink to="catalogue">Catalogue</NavLink>
         <NavLink to="favoris">Favoris</NavLink>
         <NavLink to="panier">Panier</NavLink>
+        <NavLink to="checkout">Checkout</NavLink>
         <NavLink to="tableau">Tableau de bord</NavLink>
         <NavLink to="historique">Historique</NavLink>
       </nav>
@@ -37,6 +39,7 @@ export default function Advisor() {
         <Route path="catalogue" element={<AdvisorCatalog />} />
         <Route path="favoris" element={<AdvisorFavorites />} />
         <Route path="panier" element={<AdvisorCart />} />
+        <Route path="checkout" element={<AdvisorCheckout />} />
         <Route path="tableau" element={<AdvisorDashboard />} />
         <Route path="historique" element={<AdvisorHistory />} />
       </Routes>

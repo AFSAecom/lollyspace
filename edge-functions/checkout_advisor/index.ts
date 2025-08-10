@@ -6,7 +6,7 @@ const sql = postgres(Deno.env.get("DATABASE_URL")!, { ssl: "require" });
 
 const itemSchema = z.object({
   product_variant_id: z.number().int(),
-  quantity: z.number().int().positive(),
+  qty: z.number().int().positive(),
   unit_price_tnd: z.number().nonnegative(),
   discount_tnd: z.number().nonnegative().optional().default(0),
 });
@@ -48,7 +48,7 @@ serve(async (req) => {
 
     const total = items.reduce(
       (sum: number, i: any) =>
-        sum + (i.unit_price_tnd - (i.discount_tnd ?? 0)) * i.quantity,
+        sum + (i.unit_price_tnd - (i.discount_tnd ?? 0)) * i.qty,
       0,
     );
     const code = crypto.randomUUID();
@@ -74,9 +74,11 @@ serve(async (req) => {
       const orderId = order[0].id;
 
       for (const item of items) {
+        const lineTotal =
+          (item.unit_price_tnd - (item.discount_tnd ?? 0)) * item.qty;
         await tx`
-          insert into order_items (order_id, product_variant_id, quantity, unit_price_tnd, discount_tnd)
-          values (${orderId}, ${item.product_variant_id}, ${item.quantity}, ${item.unit_price_tnd}, ${item.discount_tnd ?? 0})
+          insert into order_items (order_id, product_variant_id, qty, unit_price_tnd, discount_tnd, total_line_tnd)
+          values (${orderId}, ${item.product_variant_id}, ${item.qty}, ${item.unit_price_tnd}, ${item.discount_tnd ?? 0}, ${lineTotal})
         `;
       }
 

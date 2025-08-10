@@ -21,10 +21,10 @@ export interface SearchParams {
 function fromApiVariant(row: any): ProductVariant {
   return {
     id: row.id,
-    productId: row.product_id,
-    sizeMl: row.volume_ml,
-    priceTnd: row.price_tnd,
-    discountTnd: row.discount_tnd ?? undefined,
+    product_id: row.product_id,
+    size_ml: row.volume_ml,
+    price_tnd: row.price_tnd,
+    discount_tnd: row.discount_tnd ?? undefined,
     name: row.name ?? undefined,
   };
 }
@@ -32,10 +32,10 @@ function fromApiVariant(row: any): ProductVariant {
 export function toApiVariant(variant: ProductVariant) {
   return {
     id: variant.id,
-    product_id: variant.productId,
-    volume_ml: variant.sizeMl,
-    price_tnd: variant.priceTnd,
-    discount_tnd: variant.discountTnd,
+    product_id: variant.product_id,
+    volume_ml: variant.size_ml,
+    price_tnd: variant.price_tnd,
+    discount_tnd: variant.discount_tnd,
     name: variant.name,
   };
 }
@@ -70,8 +70,8 @@ async function searchProducts(params: SearchParams) {
     const vars = ((await varRes.json()) as any[]).map(fromApiVariant);
     const byProduct: Record<number, ProductVariant[]> = {};
     for (const v of vars) {
-      byProduct[v.productId] = byProduct[v.productId] || [];
-      byProduct[v.productId].push(v);
+      byProduct[v.product_id] = byProduct[v.product_id] || [];
+      byProduct[v.product_id].push(v);
     }
     products.forEach((p) => {
       p.variants = byProduct[p.id] || [];

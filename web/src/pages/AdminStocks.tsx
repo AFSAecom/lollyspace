@@ -31,7 +31,7 @@ export default function AdminStocks() {
         <ul className="mt-2 flex flex-col gap-1">
           {list.map(v => (
             <li key={v.id}>
-              {v.products.inspiredName} {v.sizeMl}ml ({v.stockQty})
+              {v.products.inspiredName} {v.size_ml}ml ({v.stockQty})
             </li>
           ))}
         </ul>

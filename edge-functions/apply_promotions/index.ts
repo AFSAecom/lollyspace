@@ -6,7 +6,7 @@ const sql = postgres(Deno.env.get("DATABASE_URL")!, { ssl: "require" });
 
 const itemSchema = z.object({
   product_variant_id: z.number().int(),
-  quantity: z.number().int().positive(),
+  qty: z.number().int().positive(),
   unit_price_tnd: z.number().nonnegative(),
 });
 
@@ -34,13 +34,13 @@ serve(async (req) => {
         result.find((r) => r.product_variant_id === id)
       );
       if (matches.some((m) => !m)) continue;
-      const packCount = Math.min(...matches.map((m) => m!.quantity));
+      const packCount = Math.min(...matches.map((m) => m!.qty));
       if (packCount <= 0) continue;
       const sumPrice = matches.reduce((s, m) => s + m!.unit_price_tnd, 0);
       const discountPerPack = sumPrice - price;
       const discountPerItem = discountPerPack / ids.length;
       matches.forEach((m) => {
-        m!.discount_tnd += (discountPerItem * packCount) / m!.quantity;
+        m!.discount_tnd += (discountPerItem * packCount) / m!.qty;
       });
     }
 
@@ -48,10 +48,10 @@ serve(async (req) => {
       const id = p.condition_json.product_variant_id;
       const item = result.find((r) => r.product_variant_id === id);
       if (!item) continue;
-      const freeCount = Math.floor(item.quantity / 3);
+      const freeCount = Math.floor(item.qty / 3);
       if (freeCount <= 0) continue;
       const totalDiscount = freeCount * item.unit_price_tnd;
-      item.discount_tnd += totalDiscount / item.quantity;
+      item.discount_tnd += totalDiscount / item.qty;
     }
 
     for (const p of promotions.filter((p: any) => p.type === 'discount')) {

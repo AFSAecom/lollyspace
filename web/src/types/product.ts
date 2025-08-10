@@ -1,9 +1,9 @@
 export type ProductVariant = {
   id: number;
-  productId: number;
-  sizeMl: number;
-  priceTnd: number;
-  discountTnd?: number;
+  product_id: number;
+  size_ml: number;
+  price_tnd: number;
+  discount_tnd?: number;
   name?: string;
 };
 

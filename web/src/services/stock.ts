@@ -17,10 +17,10 @@ const headers = {
 function fromApiStockVariant(row: any): StockVariant {
   return {
     id: row.id,
-    productId: row.product_id,
-    sizeMl: row.volume_ml,
-    priceTnd: row.price_tnd,
-    discountTnd: row.discount_tnd ?? undefined,
+    product_id: row.product_id,
+    size_ml: row.volume_ml,
+    price_tnd: row.price_tnd,
+    discount_tnd: row.discount_tnd ?? undefined,
     name: row.name ?? undefined,
     variantCode: row.variant_code,
     stockQty: row.stock_qty,

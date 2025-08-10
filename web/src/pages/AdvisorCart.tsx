@@ -14,8 +14,8 @@ export default function AdvisorCart() {
         client: { id: 'C1' },
         items: items.map<PromotionItem>((i) => ({
           product_variant_id: i.product_variant_id,
-          quantity: i.quantity,
-          unit_price_tnd: i.price_tnd,
+          qty: i.qty,
+          unit_price_tnd: i.unit_price_tnd,
           discount_tnd: i.discount_tnd,
         })),
       });
@@ -40,19 +40,19 @@ export default function AdvisorCart() {
             <div>
               <p>{i.name}</p>
               <p className="text-sm text-muted">
-                {i.quantity} × {i.price_tnd} TND
+                {i.qty} × {i.unit_price_tnd} TND
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => update(i.product_variant_id, i.quantity - 1)}
+                onClick={() => update(i.product_variant_id, i.qty - 1)}
                 className="px-2 py-1 border rounded"
               >
                 -
               </button>
-              <span>{i.quantity}</span>
+              <span>{i.qty}</span>
               <button
-                onClick={() => update(i.product_variant_id, i.quantity + 1)}
+                onClick={() => update(i.product_variant_id, i.qty + 1)}
                 className="px-2 py-1 border rounded"
               >
                 +
