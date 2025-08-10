@@ -13,7 +13,7 @@ serve(async (req) => {
     const { order_id } = bodySchema.parse(await req.json());
 
     const order = await sql`
-      select o.id, o.user_id as referee_id, o.total_tnd,
+      select o.id, o.user_id as referee_id, o.total_tnd, o.created_at,
              p.referrer_id as l1, p1.referrer_id as l2, p2.referrer_id as l3
       from orders o
       left join profiles p on p.id = o.user_id
@@ -30,13 +30,19 @@ serve(async (req) => {
     const referrerIds = referrers.filter((r) => r) as string[];
 
     const globalRules = await sql`
-      select level, rate from commission_rules where referrer_id is null
+      select level, rate
+      from commission_settings
+      where active
     `;
+
     const overrideRules = referrerIds.length
       ? await sql`
-          select level, rate, referrer_id
-          from commission_rules
+          select referrer_id, level, rate
+          from custom_commission_rules
           where referrer_id in (${sql(referrerIds)})
+            and level in (1,2,3)
+            and start_at <= ${data.created_at}
+            and (end_at is null or end_at > ${data.created_at})
         `
       : [];
 
