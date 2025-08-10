@@ -2,6 +2,8 @@ node_modules/
 web/node_modules/
 dist/
 web/dist/
+# Allow npm lockfile
+!web/package-lock.json
 .env
 .env.local
 web/.env
