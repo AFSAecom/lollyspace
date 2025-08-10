@@ -4,15 +4,15 @@ import {
   deletePromotion,
   savePromotion,
   PromotionInput,
+  Promotion,
+  DiscountCondition,
+  TwoPlusOneCondition,
+  PackCondition,
+  PromotionId,
 } from '../services/promotions';
-import { Promotion, PromotionId } from '@/types/promotion';
 import { useState } from 'react';
 
-type PromotionWithApi = Promotion & {
-  condition_json?: any;
-  starts_at: string;
-  ends_at: string;
-};
+type PromotionWithApi = Promotion;
 
 function PromotionForm({
   promotion,
@@ -25,16 +25,28 @@ function PromotionForm({
     promotion?.type || 'discount',
   );
   const [productVariantId, setProductVariantId] = useState(
-    promotion?.condition_json?.product_variant_id || '',
+    promotion &&
+    (promotion.type === 'discount' || promotion.type === 'two_plus_one')
+      ? String(
+          (promotion.condition_json as DiscountCondition | TwoPlusOneCondition)
+            .product_variant_id,
+        )
+      : '',
   );
   const [percent, setPercent] = useState(
-    promotion?.condition_json?.percent || '',
+    promotion && promotion.type === 'discount'
+      ? String((promotion.condition_json as DiscountCondition).percent)
+      : '',
   );
   const [packIds, setPackIds] = useState(
-    promotion?.condition_json?.product_variant_ids?.join(',') || '',
+    promotion && promotion.type === 'pack'
+      ? (promotion.condition_json as PackCondition).product_variant_ids.join(',')
+      : '',
   );
   const [packPrice, setPackPrice] = useState(
-    promotion?.condition_json?.price || '',
+    promotion && promotion.type === 'pack'
+      ? String((promotion.condition_json as PackCondition).price)
+      : '',
   );
   const [startsAt, setStartsAt] = useState(
     promotion ? promotion.starts_at.slice(0, 10) : '',
@@ -46,7 +58,7 @@ function PromotionForm({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    let condition_json: any;
+    let condition_json: DiscountCondition | TwoPlusOneCondition | PackCondition;
     if (type === 'discount') {
       condition_json = {
         product_variant_id: Number(productVariantId),
@@ -201,9 +213,7 @@ export default function AdminPromotions() {
   );
 
   const handleEdit = (id: PromotionId) => {
-    const promo = (promotions as PromotionWithApi[] | undefined)?.find(
-      (p: PromotionWithApi) => p.id === id,
-    );
+    const promo = promotions?.find((p) => p.id === id);
     setEditing(promo ?? null);
   };
 
@@ -238,8 +248,7 @@ export default function AdminPromotions() {
         </button>
       )}
       <ul className="mt-4 flex flex-col gap-1">
-        {(promotions as PromotionWithApi[] | undefined)?.map(
-          (p: PromotionWithApi) => (
+        {promotions?.map((p) => (
           <li key={p.id} className="flex justify-between">
             <span>{p.type}</span>
             <div className="flex gap-2">
