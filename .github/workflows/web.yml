@@ -1,0 +1,30 @@
+name: web
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      - name: Assert lockfile present & not ignored
+        run: |
+          test -f web/package-lock.json || (echo "Missing web/package-lock.json" && exit 1)
+          git check-ignore -v web/package-lock.json && (echo "Lockfile is ignored" && exit 1) || true
+      - name: Install (read-only)
+        run: npm ci --no-audit --no-fund
+        working-directory: web
+      - name: Ensure setup is non-mutating
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Files changed during install:"; git status --porcelain; exit 1;
+          fi
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: web
+      - name: Build
+        run: npm run build
+        working-directory: web
