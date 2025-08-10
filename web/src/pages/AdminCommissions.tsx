@@ -1,8 +1,6 @@
 import { useCommissions, payCommission, payCommissions, Commission } from '../services/commissions';
 import CommissionFilters, { CommissionFilterValues } from '../components/CommissionFilters';
 import { useMemo, useState } from 'react';
-// @ts-ignore - sheetjs types are not available
-import * as XLSX from 'xlsx';
 
 export default function AdminCommissions() {
   const [filters, setFilters] = useState<CommissionFilterValues>({});
@@ -35,21 +33,13 @@ export default function AdminCommissions() {
     refetch();
   }
 
-  function exportXlsx() {
-    const data = aggregates.map(a => ({ referrer_id: a.referrer_id, total_tnd: a.total }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Commissions');
-    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'commissions.xlsx';
-    a.click();
-    window.URL.revokeObjectURL(url);
+  async function exportXlsx() {
+    const XLSX = await import('xlsx');
+    const rows = aggregates.map(a => ({ referrer_id: a.referrer_id, total_tnd: a.total }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Commissions');
+    XLSX.writeFile(wb, `commissions_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   async function handlePaySelected() {
