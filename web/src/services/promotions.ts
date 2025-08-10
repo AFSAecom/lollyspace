@@ -1,10 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
 import { PromotionId } from '@/types/promotion';
+export type { PromotionId };
+
+export interface DiscountCondition {
+  product_variant_id: number;
+  percent: number;
+}
+
+export interface TwoPlusOneCondition {
+  product_variant_id: number;
+}
+
+export interface PackCondition {
+  product_variant_ids: number[];
+  price: number;
+}
+
+export type PromotionCondition =
+  | DiscountCondition
+  | TwoPlusOneCondition
+  | PackCondition;
 
 export interface Promotion {
   id: PromotionId;
-  type: string;
-  condition_json: any;
+  type: 'discount' | 'two_plus_one' | 'pack';
+  condition_json: PromotionCondition;
   starts_at: string;
   ends_at: string;
   active: boolean;
@@ -12,8 +32,8 @@ export interface Promotion {
 
 export interface PromotionInput {
   id?: PromotionId;
-  type: string;
-  condition_json: any;
+  type: 'discount' | 'two_plus_one' | 'pack';
+  condition_json: PromotionCondition;
   starts_at: string;
   ends_at: string;
   active: boolean;
