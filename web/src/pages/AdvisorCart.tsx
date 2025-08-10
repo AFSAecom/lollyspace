@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCartStore } from '@/stores/cart';
 import { checkoutAdvisorWithOffline } from '@/services/checkout';
+import type { PromotionItem } from '@/services/promotions';
 
 export default function AdvisorCart() {
   const { items, update, remove, reset } = useCartStore();
@@ -11,7 +12,7 @@ export default function AdvisorCart() {
       await checkoutAdvisorWithOffline({
         advisor_id: 'A1',
         client: { id: 'C1' },
-        items: items.map((i) => ({
+        items: items.map<PromotionItem>((i) => ({
           product_variant_id: i.product_variant_id,
           quantity: i.quantity,
           unit_price_tnd: i.price_tnd,

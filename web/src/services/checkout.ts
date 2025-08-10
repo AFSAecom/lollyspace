@@ -1,13 +1,9 @@
-import { applyPromotions, PromotionItem } from './promotions';
+import { applyPromotions, type PromotionItem } from './promotions';
 
-const env =
-  typeof import.meta !== 'undefined' && (import.meta as any).env
-    ? (import.meta as any).env
-    : process.env;
-const baseUrl = env.VITE_SUPABASE_URL as string;
+const baseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const headers = {
-  apikey: env.VITE_SUPABASE_ANON_KEY as string,
-  Authorization: `Bearer ${env.VITE_SUPABASE_ANON_KEY}`,
+  apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
   'Content-Type': 'application/json',
 };
 
@@ -32,22 +28,28 @@ export async function checkoutAdvisor(payload: {
 
 const OFFLINE_KEY = 'offline-sales';
 
-function saveOffline(payload: any) {
+type CheckoutPayload = Parameters<typeof checkoutAdvisor>[0];
+
+function saveOffline(payload: CheckoutPayload) {
   if (typeof localStorage === 'undefined') return;
-  const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
+  const queue: CheckoutPayload[] = JSON.parse(
+    localStorage.getItem(OFFLINE_KEY) || '[]',
+  );
   queue.push(payload);
   localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue));
 }
 
 export async function syncOfflineSales() {
   if (typeof localStorage === 'undefined') return;
-  const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
+  const queue: CheckoutPayload[] = JSON.parse(
+    localStorage.getItem(OFFLINE_KEY) || '[]',
+  );
   if (queue.length === 0) return;
-  const remaining: any[] = [];
+  const remaining: CheckoutPayload[] = [];
   for (const sale of queue) {
     try {
       await checkoutAdvisor(sale);
-    } catch (e) {
+    } catch {
       remaining.push(sale);
     }
   }
@@ -56,17 +58,13 @@ export async function syncOfflineSales() {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    syncOfflineSales();
+    void syncOfflineSales();
   });
 }
 
-export async function checkoutAdvisorWithOffline(payload: {
-  advisor_id: string;
-  client:
-    | { id: string }
-    | { first_name: string; last_name: string; phone: string };
-  items: PromotionItem[];
-}) {
+export async function checkoutAdvisorWithOffline(
+  payload: CheckoutPayload,
+) {
   try {
     return await checkoutAdvisor(payload);
   } catch (e) {

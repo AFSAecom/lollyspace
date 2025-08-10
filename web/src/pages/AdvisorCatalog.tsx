@@ -3,6 +3,7 @@ import SearchBarDual from '@/components/SearchBarDual';
 import VolumeButtons from '@/components/VolumeButtons';
 import { useSearchProducts, Product } from '@/services/products';
 import { useCartStore } from '@/stores/cart';
+import type { CartItem } from '@/types/cart';
 
 export default function AdvisorCatalog() {
   const [query, setQuery] = useState('');
@@ -27,13 +28,14 @@ export default function AdvisorCatalog() {
   const handleAdd = (p: Product, volume: number) => {
     // In real implementation, variant info would come from API
     const product_variant_id = Number(`${p.id}${volume}`);
-    add({
+    const item: CartItem = {
       id: p.id,
       name: p.inspired_name,
       product_variant_id,
       price_tnd: 0,
       discount_tnd: 0,
-    });
+    };
+    add(item);
   };
 
   return (

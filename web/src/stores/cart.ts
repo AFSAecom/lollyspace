@@ -1,25 +1,9 @@
 import { create } from 'zustand';
-
-export interface CartItem {
-  id: number; // product id
-  name: string;
-  product_variant_id: number;
-  price_tnd: number;
-  discount_tnd?: number;
-  quantity: number;
-}
+import type { CartItem } from '@/types/cart';
 
 interface CartState {
-  items: CartItem[];
-  add: (
-    item: {
-      id: number;
-      name: string;
-      product_variant_id: number;
-      price_tnd: number;
-      discount_tnd?: number;
-    },
-  ) => void;
+  items: (CartItem & { quantity: number })[];
+  add: (item: CartItem) => void;
   update: (product_variant_id: number, quantity: number) => void;
   remove: (product_variant_id: number) => void;
   reset: () => void;
