@@ -8,11 +8,18 @@ import type { ProductVariant } from '@/types/product';
 
 export default function Client() {
   const [search, setSearch] = useState({
-    query_name_brand: '',
-    query_notes: '',
+    q_brand_name: '',
+    q_ingredients: '',
   });
+  const [filters, setFilters] = useState({ gender: '', season: '', family: '' });
   const [page, setPage] = useState(1);
-  const { data } = useSearchProducts({ ...search, page });
+  const pageSize = 20;
+  const { data } = useSearchProducts({
+    ...search,
+    ...filters,
+    page,
+    page_size: pageSize,
+  });
   const add = useCartStore((s) => s.add);
   const [seedCode, setSeedCode] = useState<string | null>(null);
 
@@ -47,6 +54,45 @@ export default function Client() {
           setPage(1);
         }}
       />
+      <div className="flex gap-2">
+        <select
+          value={filters.gender}
+          onChange={(e) => {
+            setFilters((f) => ({ ...f, gender: e.target.value }));
+            setPage(1);
+          }}
+        >
+          <option value="">Genre</option>
+          <option value="male">Homme</option>
+          <option value="female">Femme</option>
+          <option value="unisex">Unisexe</option>
+        </select>
+        <select
+          value={filters.season}
+          onChange={(e) => {
+            setFilters((f) => ({ ...f, season: e.target.value }));
+            setPage(1);
+          }}
+        >
+          <option value="">Saison</option>
+          <option value="spring">Printemps</option>
+          <option value="summer">Été</option>
+          <option value="fall">Automne</option>
+          <option value="winter">Hiver</option>
+        </select>
+        <select
+          value={filters.family}
+          onChange={(e) => {
+            setFilters((f) => ({ ...f, family: e.target.value }));
+            setPage(1);
+          }}
+        >
+          <option value="">Famille</option>
+          <option value="floral">Floral</option>
+          <option value="citrus">Citrus</option>
+          <option value="woody">Boisé</option>
+        </select>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {data?.map((p) => (
           <ProductCard
@@ -67,13 +113,13 @@ export default function Client() {
           />
         ))}
       </div>
-      {(search.query_name_brand || search.query_notes) && (
+      {(search.q_brand_name || search.q_ingredients || filters.gender || filters.season || filters.family) && (
         <div className="flex items-center gap-2">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
             Prev
           </button>
           <span>{page}</span>
-          <button onClick={() => setPage((p) => p + 1)} disabled={!data || data.length < 20}>
+          <button onClick={() => setPage((p) => p + 1)} disabled={!data || data.length < pageSize}>
             Next
           </button>
         </div>

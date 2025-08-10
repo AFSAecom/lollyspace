@@ -10,12 +10,13 @@ export interface Product {
 }
 
 export interface SearchParams {
-  query_name_brand: string;
-  query_notes: string;
+  q_brand_name: string;
+  q_ingredients: string;
   gender?: string;
   season?: string;
   family?: string;
   page: number;
+  page_size: number;
 }
 
 function fromApiVariant(row: any): ProductVariant {
@@ -41,7 +42,7 @@ export function toApiVariant(variant: ProductVariant) {
 }
 
 async function searchProducts(params: SearchParams) {
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/search_products`;
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/rpc_search_products`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -49,7 +50,7 @@ async function searchProducts(params: SearchParams) {
       apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({ ...params, per_page: 20 }),
+    body: JSON.stringify(params),
   });
   if (!res.ok) {
     throw new Error(await res.text());
@@ -84,17 +85,18 @@ export function useSearchProducts(params: SearchParams) {
   return useQuery({
     queryKey: [
       'products',
-      params.query_name_brand,
-      params.query_notes,
+      params.q_brand_name,
+      params.q_ingredients,
       params.gender,
       params.season,
       params.family,
       params.page,
+      params.page_size,
     ],
     queryFn: () => searchProducts(params),
     enabled:
-      params.query_name_brand.length > 0 ||
-      params.query_notes.length > 0 ||
+      params.q_brand_name.length > 0 ||
+      params.q_ingredients.length > 0 ||
       !!params.gender ||
       !!params.season ||
       !!params.family,

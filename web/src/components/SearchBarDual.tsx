@@ -1,32 +1,32 @@
 import { useEffect, useState } from 'react';
 
 interface Props {
-  onSearch: (params: { query_name_brand: string; query_notes: string }) => void;
+  onSearch: (params: { q_brand_name: string; q_ingredients: string }) => void;
 }
 
 export default function SearchBarDual({ onSearch }: Props) {
-  const [nameBrand, setNameBrand] = useState('');
-  const [notes, setNotes] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [ingredients, setIngredients] = useState('');
 
   useEffect(() => {
-    onSearch({ query_name_brand: nameBrand, query_notes: notes });
-  }, [nameBrand, notes, onSearch]);
+    onSearch({ q_brand_name: brandName, q_ingredients: ingredients });
+  }, [brandName, ingredients, onSearch]);
 
   return (
     <div className="flex flex-col gap-2">
       <input
         type="text"
-        placeholder="Nom ou marque"
+        placeholder="Marque ou nom"
         className="w-full p-2 border rounded"
-        value={nameBrand}
-        onChange={(e) => setNameBrand(e.target.value)}
+        value={brandName}
+        onChange={(e) => setBrandName(e.target.value)}
       />
       <input
         type="text"
-        placeholder="Notes ou famille"
+        placeholder="Ingrédients"
         className="w-full p-2 border rounded"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
+        value={ingredients}
+        onChange={(e) => setIngredients(e.target.value)}
       />
     </div>
   );
