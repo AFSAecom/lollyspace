@@ -1,18 +1,20 @@
+import type { ProductVariant } from '@/types/product';
+
 interface Props {
-  volumes: number[];
-  onSelect: (volume: number) => void;
+  variants: ProductVariant[];
+  onSelect: (variant: ProductVariant) => void;
 }
 
-export default function VolumeButtons({ volumes, onSelect }: Props) {
+export default function VolumeButtons({ variants, onSelect }: Props) {
   return (
     <div className="flex gap-2">
-      {volumes.map((v) => (
+      {variants.map((v) => (
         <button
-          key={v}
+          key={v.id}
           onClick={() => onSelect(v)}
           className="px-2 py-1 border rounded"
         >
-          {v} ml
+          {v.sizeMl} ml - {v.priceTnd} TND
         </button>
       ))}
     </div>
