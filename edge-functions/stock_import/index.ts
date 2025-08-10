@@ -27,24 +27,73 @@ serve(async (req) => {
     const array = await file.arrayBuffer();
     const workbook = XLSX.read(array, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet) as { variant_code: string; stock_qty: number }[];
+    const rows = XLSX.utils.sheet_to_json(sheet) as {
+      variant_code: string;
+      stock_qty: number;
+    }[];
+
+    let success = 0;
+    let failure = 0;
 
     await sql.begin(async (tx) => {
-      await tx`
-        insert into stock_imports (import_date, supplier, bl_number)
-        values (${importDate}, ${supplier}, ${blNumber})
+      const [log] = await tx`
+        insert into stock_import_logs (import_date, supplier, bl_number, success_count, failure_count)
+        values (${importDate}, ${supplier}, ${blNumber}, 0, 0)
+        returning id
       `;
+      const logId = log.id as number;
+
       for (const r of rows) {
-        if (!r.variant_code || typeof r.stock_qty !== "number") continue;
-        await tx`
-          update product_variants
-          set stock_qty = ${r.stock_qty}, updated_at = now()
-          where variant_code = ${r.variant_code}
-        `;
+        if (!r.variant_code || typeof r.stock_qty !== "number") {
+          failure++;
+          continue;
+        }
+        try {
+          const variant = await tx`
+            select id, stock_qty
+            from product_variants
+            where variant_code = ${r.variant_code}
+          `;
+          if (variant.length === 0) {
+            failure++;
+            continue;
+          }
+          const variantId = variant[0].id as number;
+          const oldQty = variant[0].stock_qty as number;
+
+          await tx`
+            update product_variants
+            set stock_qty = ${r.stock_qty}, updated_at = now()
+            where id = ${variantId}
+          `;
+
+          await tx`
+            insert into variant_stocks (product_variant_id, qty)
+            values (${variantId}, ${r.stock_qty})
+            on conflict (product_variant_id) do update set qty = excluded.qty, updated_at = now()
+          `;
+
+          const delta = r.stock_qty - oldQty;
+          if (delta !== 0) {
+            await tx`
+              insert into stock_adjustments (product_variant_id, qty_delta, stock_import_log_id)
+              values (${variantId}, ${delta}, ${logId})
+            `;
+          }
+          success++;
+        } catch (_) {
+          failure++;
+        }
       }
+
+      await tx`
+        update stock_import_logs
+        set success_count = ${success}, failure_count = ${failure}
+        where id = ${logId}
+      `;
     });
 
-    return new Response(JSON.stringify({ imported: rows.length }), {
+    return new Response(JSON.stringify({ imported: success, failed: failure }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });
