@@ -26,16 +26,45 @@ serve(async (req) => {
 
     const data = order[0];
     const referrers = [data.l1, data.l2, data.l3];
-    const rates = [0.1, 0.05, 0.02];
+    const referrerIds = referrers.filter((r) => r) as string[];
+
+    const globalRules = await sql`
+      select level, rate from commission_rules where referrer_id is null
+    `;
+    const overrideRules = referrerIds.length
+      ? await sql`
+          select level, rate, referrer_id
+          from commission_rules
+          where referrer_id in (${sql(referrerIds)})
+        `
+      : [];
+
+    const globalMap = new Map<number, number>();
+    for (const r of globalRules) {
+      globalMap.set(r.level, Number(r.rate));
+    }
+
+    const overrideMap = new Map<string, Map<number, number>>();
+    for (const r of overrideRules) {
+      const key = r.referrer_id as string;
+      const lvlMap = overrideMap.get(key) || new Map<number, number>();
+      lvlMap.set(r.level, Number(r.rate));
+      overrideMap.set(key, lvlMap);
+    }
 
     await sql.begin(async (tx) => {
       for (let i = 0; i < 3; i++) {
         const referrer = referrers[i];
         if (referrer) {
+          const level = i + 1;
+          const rate =
+            overrideMap.get(referrer)?.get(level) ??
+            globalMap.get(level) ??
+            0;
           await tx`
             insert into commissions (referrer_id, referee_id, order_id, level, amount_tnd)
-            values (${referrer}, ${data.referee_id}, ${order_id}, ${i + 1}, ${
-              data.total_tnd * rates[i]
+            values (${referrer}, ${data.referee_id}, ${order_id}, ${level}, ${
+              data.total_tnd * rate
             })
           `;
         }
