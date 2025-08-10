@@ -1,13 +1,18 @@
-import { useCommissions, payCommission, Commission } from '../services/commissions';
+import { useCommissions, payCommission, payCommissions, Commission } from '../services/commissions';
 import CommissionFilters, { CommissionFilterValues } from '../components/CommissionFilters';
 import { useMemo, useState } from 'react';
+// @ts-ignore - sheetjs types are not available
+import * as XLSX from 'xlsx';
 
 export default function AdminCommissions() {
   const [filters, setFilters] = useState<CommissionFilterValues>({});
+  const [selected, setSelected] = useState<number[]>([]);
   const { data: commissions, refetch } = useCommissions({
     from: filters.from,
     to: filters.to,
     referrer_id: filters.referrerId,
+    status: filters.status,
+    seed: filters.seed,
   });
 
   const aggregates = useMemo(() => {
@@ -22,7 +27,7 @@ export default function AdminCommissions() {
 
   const payments = useMemo(() => {
     if (!commissions) return [] as Commission[];
-    return commissions.filter(c => c.commission_payment_items && c.commission_payment_items.length > 0);
+    return commissions.filter(c => c.paid_at);
   }, [commissions]);
 
   async function handlePay(c: Commission) {
@@ -31,15 +36,28 @@ export default function AdminCommissions() {
   }
 
   function exportXlsx() {
-    const header = 'referrer_id,total_tnd\n';
-    const rows = aggregates.map(a => `${a.referrer_id},${a.total}`).join('\n');
-    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const data = aggregates.map(a => ({ referrer_id: a.referrer_id, total_tnd: a.total }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Commissions');
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'commissions.xlsx';
     a.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  async function handlePaySelected() {
+    const selectedCommissions = commissions?.filter(c => selected.includes(c.id)) ?? [];
+    if (!selectedCommissions.length) return;
+    await payCommissions(selectedCommissions);
+    setSelected([]);
+    refetch();
   }
 
   return (
@@ -81,22 +99,38 @@ export default function AdminCommissions() {
       </ul>
 
       <h2 className="mt-8 font-serif text-xl">Détails</h2>
-      <ul className="mt-4 flex flex-col gap-2">
-        {commissions?.map(c => (
-          <li key={c.id} className="flex justify-between">
-            <span>
-              Niveau {c.level} – {c.amount_tnd} TND
-            </span>
-            {c.commission_payment_items && c.commission_payment_items.length > 0 ? (
-              <span className="text-sm text-gray-500">Payée</span>
-            ) : (
-              <button onClick={() => handlePay(c)} className="text-sm text-green-600">
-                Payer
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-2">
+        <button onClick={handlePaySelected} className="mb-2 text-sm text-green-600" disabled={selected.length === 0}>
+          Payer sélection
+        </button>
+        <ul className="flex flex-col gap-2">
+          {commissions?.map(c => (
+            <li key={c.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(c.id)}
+                  onChange={e =>
+                    setSelected(s =>
+                      e.target.checked ? [...s, c.id] : s.filter(id => id !== c.id)
+                    )
+                  }
+                />
+                <span>
+                  Niveau {c.level} – {c.amount_tnd} TND
+                </span>
+              </div>
+              {c.paid_at ? (
+                <span className="text-sm text-gray-500">Payée</span>
+              ) : (
+                <button onClick={() => handlePay(c)} className="text-sm text-green-600">
+                  Payer
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
