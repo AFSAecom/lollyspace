@@ -8,6 +8,7 @@ export interface Commission {
   level: number;
   amount_tnd: number;
   created_at: string;
+  paid_at?: string | null;
   commission_payment_items?: { payment_id: number }[];
 }
 
@@ -22,6 +23,8 @@ interface FetchParams {
   from?: string;
   to?: string;
   referrer_id?: string;
+  status?: 'paid' | 'unpaid';
+  seed?: string;
 }
 
 function buildQuery(params: FetchParams) {
@@ -35,6 +38,14 @@ function buildQuery(params: FetchParams) {
   }
   if (params.referrer_id) {
     search.append('referrer_id', `eq.${params.referrer_id}`);
+  }
+  if (params.status === 'paid') {
+    search.append('paid_at', 'not.is.null');
+  } else if (params.status === 'unpaid') {
+    search.append('paid_at', 'is.null');
+  }
+  if (params.seed) {
+    search.append('seed', params.seed);
   }
   return search.toString();
 }
@@ -71,5 +82,39 @@ export async function payCommission(c: Commission) {
       amount_tnd: c.amount_tnd,
     }),
   });
+  await fetch(`${baseUrl}/rest/v1/commissions?id=eq.${c.id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ paid_at: new Date().toISOString() }),
+  });
+}
+
+export async function payCommissions(cs: Commission[]) {
+  if (!cs.length) return;
+  const total = cs.reduce((sum, c) => sum + c.amount_tnd, 0);
+  const payee_id = cs[0].referrer_id;
+  const paymentRes = await fetch(`${baseUrl}/rest/v1/commission_payments`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ payee_id, amount_tnd: total }),
+  });
+  if (!paymentRes.ok) {
+    throw new Error(await paymentRes.text());
+  }
+  const [payment] = (await paymentRes.json()) as { id: number }[];
+  const items = cs.map(c => ({ commission_id: c.id, payment_id: payment.id, amount_tnd: c.amount_tnd }));
+  await fetch(`${baseUrl}/rest/v1/commission_payment_items`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(items),
+  });
+  const now = new Date().toISOString();
+  for (const c of cs) {
+    await fetch(`${baseUrl}/rest/v1/commissions?id=eq.${c.id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ paid_at: now }),
+    });
+  }
 }
 

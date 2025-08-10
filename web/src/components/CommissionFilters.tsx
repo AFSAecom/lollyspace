@@ -4,6 +4,8 @@ export interface CommissionFilterValues {
   from?: string;
   to?: string;
   referrerId?: string;
+  status?: 'paid' | 'unpaid';
+  seed?: string;
 }
 
 export default function CommissionFilters({ value, onChange }: { value: CommissionFilterValues; onChange: (v: CommissionFilterValues) => void }) {
@@ -33,6 +35,18 @@ export default function CommissionFilters({ value, onChange }: { value: Commissi
             </option>
           ))}
         </select>
+      </div>
+      <div>
+        <label className="block text-sm">Statut</label>
+        <select value={value.status ?? ''} onChange={e => handleChange({ status: (e.target.value || undefined) as any })}>
+          <option value="">Tous</option>
+          <option value="paid">Payé</option>
+          <option value="unpaid">Impayé</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm">Seed</label>
+        <input type="text" value={value.seed ?? ''} onChange={e => handleChange({ seed: e.target.value || undefined })} />
       </div>
     </div>
   );
