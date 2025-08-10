@@ -18,8 +18,29 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-async function fetchCommissions() {
-  const url = `${baseUrl}/rest/v1/commissions?select=*,commission_payment_items(payment_id)`;
+interface FetchParams {
+  from?: string;
+  to?: string;
+  referrer_id?: string;
+}
+
+function buildQuery(params: FetchParams) {
+  const search = new URLSearchParams();
+  search.append('select', '*,commission_payment_items(payment_id)');
+  if (params.from) {
+    search.append('created_at', `gte.${params.from}`);
+  }
+  if (params.to) {
+    search.append('created_at', `lte.${params.to}`);
+  }
+  if (params.referrer_id) {
+    search.append('referrer_id', `eq.${params.referrer_id}`);
+  }
+  return search.toString();
+}
+
+async function fetchCommissions(params: FetchParams = {}) {
+  const url = `${baseUrl}/rest/v1/commissions?${buildQuery(params)}`;
   const res = await fetch(url, { headers });
   if (!res.ok) {
     throw new Error(await res.text());
@@ -27,8 +48,8 @@ async function fetchCommissions() {
   return (await res.json()) as Commission[];
 }
 
-export function useCommissions() {
-  return useQuery({ queryKey: ['commissions'], queryFn: fetchCommissions });
+export function useCommissions(params: FetchParams = {}) {
+  return useQuery({ queryKey: ['commissions', params], queryFn: () => fetchCommissions(params) });
 }
 
 export async function payCommission(c: Commission) {
