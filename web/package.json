@@ -10,12 +10,14 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview",
+    "preview": "vite preview --port 4173 --strictPort",
     "ci:install": "npm ci --no-audit --no-fund --ignore-scripts",
     "ci:verify-clean": "git update-index -q --refresh && test -z \"$(git status --porcelain)\" || (git status --porcelain; exit 1)",
     "postinstall": "if [ -z \"$CI\" ] && [ -z \"$READONLY_SETUP\" ]; then playwright install --with-deps || true; fi",
     "prepare": "if [ -z \"$CI\" ] && [ -z \"$READONLY_SETUP\" ]; then husky install || true; fi",
-    "fix": "eslint . --ext .ts,.tsx --fix && prettier -w ."
+    "fix": "eslint . --ext .ts,.tsx --fix && prettier -w .",
+    "e2e": "npx playwright test",
+    "e2e:ci": "npx playwright test --reporter=line"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
@@ -34,5 +36,6 @@
     "tailwindcss": "^3.3.0",
     "typescript": "^5.1.0",
     "vite": "^5.0.0"
-  }
+  },
+  "types": "./src"
 }
