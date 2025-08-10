@@ -1,13 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
 
+export interface ProductVariant {
+  id: number;
+  volume_ml: number;
+  price_tnd: number;
+  product_id: number;
+}
+
 export interface Product {
   id: number;
   inspired_name: string;
   inspired_brand: string;
   active: boolean;
+  variants?: ProductVariant[];
 }
 
-async function searchProducts(query: string, page: number) {
+export interface SearchParams {
+  query_name_brand: string;
+  query_notes: string;
+  gender?: string;
+  season?: string;
+  family?: string;
+  page: number;
+}
+
+async function searchProducts(params: SearchParams) {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/search_products`;
   const res = await fetch(url, {
     method: 'POST',
@@ -16,19 +33,55 @@ async function searchProducts(query: string, page: number) {
       apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({ query, page, per_page: 20 }),
+    body: JSON.stringify({ ...params, per_page: 20 }),
   });
   if (!res.ok) {
     throw new Error(await res.text());
   }
-  return (await res.json()) as Product[];
+  const products = (await res.json()) as Product[];
+  const ids = products.map((p) => p.id);
+  if (ids.length === 0) return products;
+  const varRes = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/product_variants?select=id,product_id,volume_ml,price_tnd&product_id=in.(${ids.join(',')})`,
+    {
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+    },
+  );
+  if (varRes.ok) {
+    const vars = (await varRes.json()) as ProductVariant[];
+    const byProduct: Record<number, ProductVariant[]> = {};
+    for (const v of vars) {
+      byProduct[v.product_id] = byProduct[v.product_id] || [];
+      byProduct[v.product_id].push(v);
+    }
+    products.forEach((p) => {
+      p.variants = byProduct[p.id] || [];
+    });
+  }
+  return products;
 }
 
-export function useSearchProducts(query: string, page: number) {
+export function useSearchProducts(params: SearchParams) {
   return useQuery({
-    queryKey: ['products', query, page],
-    queryFn: () => searchProducts(query, page),
-    enabled: query.length > 0,
+    queryKey: [
+      'products',
+      params.query_name_brand,
+      params.query_notes,
+      params.gender,
+      params.season,
+      params.family,
+      params.page,
+    ],
+    queryFn: () => searchProducts(params),
+    enabled:
+      params.query_name_brand.length > 0 ||
+      params.query_notes.length > 0 ||
+      !!params.gender ||
+      !!params.season ||
+      !!params.family,
   });
 }
 

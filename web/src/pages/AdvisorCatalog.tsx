@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import SearchBarDual from '@/components/SearchBarDual';
 import VolumeButtons from '@/components/VolumeButtons';
-import { useSearchProducts, Product } from '@/services/products';
+import { useSearchProducts, Product, ProductVariant } from '@/services/products';
 import { useCartStore } from '@/stores/cart';
 import type { CartItem } from '@/types/cart';
 
 export default function AdvisorCatalog() {
-  const [query, setQuery] = useState('');
-  const { data } = useSearchProducts(query, 1);
+  const [search, setSearch] = useState({
+    query_name_brand: '',
+    query_notes: '',
+  });
+  const { data } = useSearchProducts({ ...search, page: 1 });
   const add = useCartStore((s) => s.add);
   const [favorites, setFavorites] = useState<number[]>(() => {
     try {
@@ -25,14 +28,12 @@ export default function AdvisorCatalog() {
     localStorage.setItem('favorites', JSON.stringify(next));
   };
 
-  const handleAdd = (p: Product, volume: number) => {
-    // In real implementation, variant info would come from API
-    const product_variant_id = Number(`${p.id}${volume}`);
+  const handleAdd = (p: Product, v: ProductVariant) => {
     const item: CartItem = {
       id: p.id,
       name: p.inspired_name,
-      product_variant_id,
-      price_tnd: 0,
+      product_variant_id: v.id,
+      price_tnd: v.price_tnd,
       discount_tnd: 0,
     };
     add(item);
@@ -40,7 +41,7 @@ export default function AdvisorCatalog() {
 
   return (
     <div>
-      <SearchBarDual onSearch={setQuery} />
+      <SearchBarDual onSearch={setSearch} />
       <div className="mt-4 grid gap-4">
         {data?.map((p) => (
           <div key={p.id} className="border p-2 rounded bg-background text-foreground">
@@ -55,7 +56,7 @@ export default function AdvisorCatalog() {
             </div>
             <div className="mt-2">
               <VolumeButtons
-                volumes={[30, 50, 100]}
+                variants={p.variants || []}
                 onSelect={(v) => handleAdd(p, v)}
               />
             </div>
