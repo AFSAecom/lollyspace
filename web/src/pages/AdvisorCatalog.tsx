@@ -8,10 +8,10 @@ import type { ProductVariant } from '@/types/product';
 
 export default function AdvisorCatalog() {
   const [search, setSearch] = useState({
-    query_name_brand: '',
-    query_notes: '',
+    q_brand_name: '',
+    q_ingredients: '',
   });
-  const { data } = useSearchProducts({ ...search, page: 1 });
+  const { data } = useSearchProducts({ ...search, page: 1, page_size: 20 });
   const add = useCartStore((s) => s.add);
   const [favorites, setFavorites] = useState<number[]>(() => {
     try {
@@ -42,7 +42,7 @@ export default function AdvisorCatalog() {
 
   return (
     <div>
-      <SearchBarDual onSearch={setSearch} />
+      <SearchBarDual onSearch={(params) => setSearch(params)} />
       <div className="mt-4 grid gap-4">
         {data?.map((p) => (
           <div key={p.id} className="border p-2 rounded bg-background text-foreground">

@@ -40,16 +40,16 @@ const products = [
 ];
 
 function searchLocal({
-  query_name_brand = '',
-  query_notes = '',
+  q_brand_name = '',
+  q_ingredients = '',
   gender,
   season,
   family,
   page = 1,
-  per_page = 20,
+  page_size = 20,
 }) {
-  const qb = query_name_brand.toLowerCase();
-  const qn = query_notes.toLowerCase();
+  const qb = q_brand_name.toLowerCase();
+  const qi = q_ingredients.toLowerCase();
   return products
     .filter((p) => p.active)
     .filter((p) => {
@@ -58,23 +58,25 @@ function searchLocal({
     })
     .filter((p) => {
       const notes = `${p.top_notes.join(' ')} ${p.heart_notes.join(' ')} ${p.base_notes.join(' ')} ${p.olfactory_family}`.toLowerCase();
-      return !qn || notes.includes(qn);
+      return !qi || notes.includes(qi);
     })
     .filter((p) => !gender || p.gender === gender)
     .filter((p) => !season || p.season === season)
     .filter((p) => !family || p.olfactory_family === family)
-    .slice((page - 1) * per_page, page * per_page);
+    .slice((page - 1) * page_size, page * page_size);
 }
-
-const res1 = searchLocal({ query_name_brand: 'woody', query_notes: 'vanilla', page: 1, per_page: 20 });
+const res1 = searchLocal({ q_brand_name: 'woody', q_ingredients: 'vanilla', page: 1, page_size: 20 });
 assert.strictEqual(res1.length, 1);
 assert.strictEqual(res1[0].id, 3);
 
-const res2 = searchLocal({ query_name_brand: 'citrus', page: 1, per_page: 20 });
+const res2 = searchLocal({ q_brand_name: 'citrus', gender: 'unisex', page: 1, page_size: 20 });
 assert.strictEqual(res2[0].id, 2);
 
-const pag1 = searchLocal({ page: 1, per_page: 2 });
-const pag2 = searchLocal({ page: 2, per_page: 2 });
+const res3 = searchLocal({ q_ingredients: 'rose', season: 'spring', family: 'floral', page: 1, page_size: 20 });
+assert.strictEqual(res3[0].id, 1);
+
+const pag1 = searchLocal({ page: 1, page_size: 2 });
+const pag2 = searchLocal({ page: 2, page_size: 2 });
 assert.deepStrictEqual(pag1.map((p) => p.id), [1, 2]);
 assert.deepStrictEqual(pag2.map((p) => p.id), [3]);
 
