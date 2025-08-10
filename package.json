@@ -1,0 +1,7 @@
+{
+  "name": "lollyspace-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node tests/seed_commissions.test.js"
+  }
+}
