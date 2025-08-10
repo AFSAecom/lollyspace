@@ -6,7 +6,8 @@ dist/
 coverage/
 *.cache
 src/generated/**
-# Allow npm lockfile in web
+# Ignore root lockfile but allow one in web
+package-lock.json
 !web/package-lock.json
 
 # Environment files

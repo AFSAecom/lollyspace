@@ -10,7 +10,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ci:install": "npm ci --no-audit --no-fund --ignore-scripts",
+    "ci:verify-clean": "git update-index -q --refresh && test -z \"$(git status --porcelain)\" || (git status --porcelain; exit 1)",
+    "postinstall": "if [ -z \"$CI\" ] && [ -z \"$READONLY_SETUP\" ]; then playwright install --with-deps || true; fi",
+    "prepare": "if [ -z \"$CI\" ] && [ -z \"$READONLY_SETUP\" ]; then husky install || true; fi",
+    "fix": "eslint . --ext .ts,.tsx --fix && prettier -w ."
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
