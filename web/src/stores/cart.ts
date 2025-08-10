@@ -1,10 +1,6 @@
 import { create } from 'zustand';
-
-export interface CartItem {
-  id: number;
-  name: string;
-  quantity: number;
-}
+import { getDb } from '../services/db';
+import type { CartItem } from '../types/cart';
 
 interface CartState {
   items: CartItem[];
@@ -28,3 +24,21 @@ export const useCartStore = create<CartState>((set) => ({
     }),
   reset: () => set({ items: [] }),
 }));
+
+// Hydrate cart draft from IndexedDB
+(async () => {
+  const db = await getDb();
+  if (db) {
+    const draft = await db.table('cart_draft').get('current');
+    if (draft?.items) {
+      useCartStore.setState({ items: draft.items as CartItem[] });
+    }
+    useCartStore.subscribe(async (state) => {
+      await db.table('cart_draft').put({
+        id: 'current',
+        items: state.items,
+        updatedAt: Date.now(),
+      });
+    });
+  }
+})();
