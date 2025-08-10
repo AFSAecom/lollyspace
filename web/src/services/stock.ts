@@ -3,7 +3,7 @@ import type { ProductVariant } from '@/types/product';
 
 export interface StockVariant extends ProductVariant {
   variantCode: string;
-  stockQty: number;
+  stockCurrent: number;
   stockMin: number;
   products: { inspiredName: string };
 }
@@ -23,15 +23,15 @@ function fromApiStockVariant(row: any): StockVariant {
     discount_tnd: row.discount_tnd ?? undefined,
     name: row.name ?? undefined,
     variantCode: row.variant_code,
-    stockQty: row.stock_qty,
-    stockMin: row.stock_min,
+    stockCurrent: row.variant_stocks?.stock_current ?? 0,
+    stockMin: row.variant_stocks?.stock_min ?? 0,
     products: { inspiredName: row.products?.inspired_name },
   };
 }
 
 async function fetchVariants(): Promise<StockVariant[]> {
   const res = await fetch(
-    `${baseUrl}/rest/v1/product_variants?select=*,products(inspired_name)`,
+    `${baseUrl}/rest/v1/product_variants?select=*,products(inspired_name),variant_stocks(stock_current,stock_min)`,
     { headers }
   );
   if (!res.ok) {

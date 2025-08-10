@@ -5,9 +5,9 @@ export default function AdminStocks() {
   const { data: variants, refetch } = useProductVariants();
   const [loading, setLoading] = useState(false);
 
-  const ruptures = variants?.filter(v => v.stockQty === 0) ?? [];
-  const low = variants?.filter(v => v.stockQty > 0 && v.stockQty < v.stockMin) ?? [];
-  const ok = variants?.filter(v => v.stockQty >= v.stockMin) ?? [];
+  const ruptures = variants?.filter(v => v.stockCurrent === 0) ?? [];
+  const low = variants?.filter(v => v.stockCurrent > 0 && v.stockCurrent < v.stockMin) ?? [];
+  const ok = variants?.filter(v => v.stockCurrent >= v.stockMin) ?? [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,7 +31,7 @@ export default function AdminStocks() {
         <ul className="mt-2 flex flex-col gap-1">
           {list.map(v => (
             <li key={v.id}>
-              {v.products.inspiredName} {v.size_ml}ml ({v.stockQty})
+              {v.products.inspiredName} {v.size_ml}ml ({v.stockCurrent})
             </li>
           ))}
         </ul>
