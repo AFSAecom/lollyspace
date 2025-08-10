@@ -6,8 +6,6 @@ dist/
 coverage/
 *.cache
 src/generated/**
-# Allow npm lockfile in web
-!web/package-lock.json
 
 # Environment files
 .env
