@@ -10,13 +10,18 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
-      - name: Install (CI)
-        run: npm ci
+      - name: Install (read-only)
+        run: |
+          npm ci --no-audit --no-fund
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Setup must not modify tracked files"; git status --porcelain; exit 1;
+          fi
+        working-directory: web
       - name: Lint
         run: npm run lint --if-present
       - name: Typecheck
