@@ -12,7 +12,8 @@ const itemSchema = z.object({
 });
 
 const bodySchema = z.object({
-  advisor_id: z.string().uuid(),
+  advisor_id: z.string().uuid().optional(),
+  seed_code: z.string().optional(),
   client: z.union([
     z.object({ id: z.string().uuid() }),
     z.object({
@@ -22,12 +23,25 @@ const bodySchema = z.object({
     }),
   ]),
   items: z.array(itemSchema).min(1),
+}).refine((d) => d.advisor_id || d.seed_code, {
+  message: "advisor_id or seed_code required",
 });
 
 serve(async (req) => {
   try {
     const payload = await req.json();
     const data = bodySchema.parse(payload);
+
+    let advisorId = data.advisor_id;
+    if (!advisorId && data.seed_code) {
+      const ref = await sql`
+        select id from profiles where seed_code = ${data.seed_code}
+      `;
+      if (ref.length === 0) {
+        throw new Error("Invalid seed code");
+      }
+      advisorId = ref[0].id;
+    }
 
     const promoRes = await fetch(
       new URL('/apply_promotions', req.url).toString(),
@@ -64,9 +78,13 @@ serve(async (req) => {
         clientId = inserted[0].id;
       }
 
+      if (data.seed_code) {
+        await tx`select activate_seed(${data.seed_code}, ${clientId})`;
+      }
+
       const order = await tx`
         insert into orders (order_code, user_id, advisor_id, total_tnd)
-        values (${code}, ${clientId}, ${data.advisor_id}, ${total})
+        values (${code}, ${clientId}, ${advisorId}, ${total})
         returning id
       `;
       const orderId = order[0].id;
