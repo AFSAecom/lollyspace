@@ -1,8 +1,8 @@
-import { applyPromotions, PromotionItem } from './promotions';
+import { applyPromotions, type PromotionItem } from './promotions';
 
-const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+const baseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const headers = {
-  apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
   Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
   'Content-Type': 'application/json',
 };
@@ -25,3 +25,51 @@ export async function checkoutAdvisor(payload: {
   }
   return res.json();
 }
+
+const OFFLINE_KEY = 'offline-sales';
+
+type CheckoutPayload = Parameters<typeof checkoutAdvisor>[0];
+
+function saveOffline(payload: CheckoutPayload) {
+  if (typeof localStorage === 'undefined') return;
+  const queue: CheckoutPayload[] = JSON.parse(
+    localStorage.getItem(OFFLINE_KEY) || '[]',
+  );
+  queue.push(payload);
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue));
+}
+
+export async function syncOfflineSales() {
+  if (typeof localStorage === 'undefined') return;
+  const queue: CheckoutPayload[] = JSON.parse(
+    localStorage.getItem(OFFLINE_KEY) || '[]',
+  );
+  if (queue.length === 0) return;
+  const remaining: CheckoutPayload[] = [];
+  for (const sale of queue) {
+    try {
+      await checkoutAdvisor(sale);
+    } catch {
+      remaining.push(sale);
+    }
+  }
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(remaining));
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    void syncOfflineSales();
+  });
+}
+
+export async function checkoutAdvisorWithOffline(
+  payload: CheckoutPayload,
+) {
+  try {
+    return await checkoutAdvisor(payload);
+  } catch (e) {
+    saveOffline(payload);
+    throw e;
+  }
+}
+

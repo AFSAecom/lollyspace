@@ -3,6 +3,7 @@ import ProductCard from '../components/ProductCard';
 import SearchBarDual from '../components/SearchBarDual';
 import { useSearchProducts } from '../services/products';
 import { useCartStore } from '../stores/cart';
+import type { CartItem } from '@/types/cart';
 
 export default function Client() {
   const [term, setTerm] = useState('');
@@ -20,12 +21,21 @@ export default function Client() {
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {data?.map((p) => (
-          <ProductCard
-            key={p.id}
-            name={p.inspired_name}
-            brand={p.inspired_brand}
-            onAdd={() => add({ id: p.id, name: p.inspired_name })}
-          />
+            <ProductCard
+              key={p.id}
+              name={p.inspired_name}
+              brand={p.inspired_brand}
+              onAdd={() => {
+                const item: CartItem = {
+                  id: p.id,
+                  name: p.inspired_name,
+                  product_variant_id: Number(`${p.id}50`),
+                  price_tnd: 0,
+                  discount_tnd: 0,
+                };
+                add(item);
+              }}
+            />
         ))}
       </div>
       {term && (
