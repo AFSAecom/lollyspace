@@ -1,4 +1,6 @@
 import { applyPromotions, PromotionItem } from './promotions';
+import { getDb } from './db';
+import { addRecentClient, Client } from './clients';
 
 const baseUrl = import.meta.env.VITE_SUPABASE_URL;
 const headers = {
@@ -15,13 +17,31 @@ export async function checkoutAdvisor(payload: {
   items: PromotionItem[];
 }) {
   const promo = await applyPromotions(payload.items);
-  const res = await fetch(`${baseUrl}/functions/v1/checkout_advisor`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ ...payload, items: promo.items }),
-  });
-  if (!res.ok) {
-    throw new Error(await res.text());
+  try {
+    const res = await fetch(`${baseUrl}/functions/v1/checkout_advisor`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...payload, items: promo.items }),
+    });
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    if ('id' in payload.client) {
+      await addRecentClient(payload.client as Client);
+    }
+    return res.json();
+  } catch (err) {
+    const db = await getDb();
+    if (db) {
+      await db.table('pending_mutations').add({
+        type: 'checkoutAdvisor',
+        payload,
+        createdAt: Date.now(),
+      });
+      if ('id' in payload.client) {
+        await addRecentClient(payload.client as Client);
+      }
+    }
+    throw err;
   }
-  return res.json();
 }

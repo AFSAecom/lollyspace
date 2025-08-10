@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { getDb } from './db';
 
 export interface Product {
   id: number;
@@ -32,18 +33,34 @@ export function useSearchProducts(query: string, page: number) {
   });
 }
 
-async function fetchProducts() {
+export async function fetchProducts() {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products?select=*`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-    },
-  });
-  if (!res.ok) {
-    throw new Error(await res.text());
+  try {
+    const res = await fetch(url, {
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    const data = (await res.json()) as Product[];
+    const db = await getDb();
+    if (db) {
+      await db.table('catalog_cache').bulkPut(
+        data.map((p) => ({ id: p.id, data: p, updatedAt: Date.now() }))
+      );
+    }
+    return data;
+  } catch (err) {
+    const db = await getDb();
+    if (db) {
+      const cached = await db.table('catalog_cache').toArray();
+      return cached.map((c: any) => c.data as Product);
+    }
+    throw err;
   }
-  return (await res.json()) as Product[];
 }
 
 export function useAllProducts() {
