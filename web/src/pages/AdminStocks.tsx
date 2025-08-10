@@ -2,12 +2,15 @@ import { useProductVariants, importStock, StockVariant } from '../services/stock
 import { useState } from 'react';
 
 export default function AdminStocks() {
-  const { data: variants, refetch } = useProductVariants();
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const { data, refetch } = useProductVariants(page, pageSize);
+  const variants = data?.rows ?? [];
   const [loading, setLoading] = useState(false);
 
-  const ruptures = variants?.filter(v => v.stockCurrent === 0) ?? [];
-  const low = variants?.filter(v => v.stockCurrent > 0 && v.stockCurrent < v.stockMin) ?? [];
-  const ok = variants?.filter(v => v.stockCurrent >= v.stockMin) ?? [];
+  const ruptures = variants.filter(v => v.stockCurrent === 0);
+  const low = variants.filter(v => v.stockCurrent > 0 && v.stockCurrent < v.stockMin);
+  const ok = variants.filter(v => v.stockCurrent >= v.stockMin);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,6 +70,16 @@ export default function AdminStocks() {
       {renderList('Ruptures', ruptures)}
       {renderList('Stock minimum', low)}
       {renderList('OK', ok)}
+
+      <div className="mt-4 flex items-center gap-2">
+        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+          Prev
+        </button>
+        <span>{page}</span>
+        <button onClick={() => setPage(p => p + 1)} disabled={variants.length < pageSize}>
+          Next
+        </button>
+      </div>
     </div>
   );
 }

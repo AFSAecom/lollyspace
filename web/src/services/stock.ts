@@ -29,20 +29,27 @@ function fromApiStockVariant(row: any): StockVariant {
   };
 }
 
-async function fetchVariants(): Promise<StockVariant[]> {
-  const res = await fetch(
-    `${baseUrl}/rest/v1/product_variants?select=*,products(inspired_name),variant_stocks(stock_current,stock_min)`,
-    { headers }
-  );
+interface StockQueryResult {
+  rows: StockVariant[];
+  counts: { ruptures: number; low: number; ok: number };
+}
+
+async function fetchVariants(page: number, size: number): Promise<StockQueryResult> {
+  const res = await fetch(`${baseUrl}/rest/v1/rpc/rpc_get_stock_state`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page, size, filters: {} }),
+  });
   if (!res.ok) {
     throw new Error(await res.text());
   }
-  const data = (await res.json()) as any[];
-  return data.map(fromApiStockVariant);
+  const data = await res.json();
+  const rows = ((data?.rows as any[]) || []).map(fromApiStockVariant);
+  return { rows, counts: data?.counts };
 }
 
-export function useProductVariants() {
-  return useQuery({ queryKey: ['product_variants'], queryFn: fetchVariants });
+export function useProductVariants(page: number, size: number) {
+  return useQuery({ queryKey: ['product_variants', page, size], queryFn: () => fetchVariants(page, size) });
 }
 
 export async function importStock(data: FormData) {
