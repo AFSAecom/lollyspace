@@ -1,15 +1,27 @@
 const assert = require('assert');
 
-function activate_seed(seed_code, client, profiles) {
+function rpc_activate_seed(profile) {
+  profile.seed_code = profile.id;
+  profile.seed_activated_at = new Date();
+  return profile.seed_code;
+}
+
+function rpc_set_referrer(seed_code, client, profiles) {
   const ref = profiles.find((p) => p.seed_code === seed_code);
   if (!ref) throw new Error('Invalid seed code');
+  let cur = ref;
+  for (let i = 0; i < 3; i++) {
+    if (!cur) break;
+    if (cur.id === client.id) throw new Error('Cycle detected');
+    cur = profiles.find((p) => p.id === cur.referrer_id);
+  }
   client.referrer_id = ref.id;
   return ref.id;
 }
 
 function compute_commissions(order, profiles, rules) {
   const getProfile = (id) => profiles.find((p) => p.id === id);
-  const l1 = order.advisor_id;
+  const l1 = getProfile(order.user_id)?.referrer_id;
   const l2 = getProfile(l1)?.referrer_id;
   const l3 = getProfile(l2)?.referrer_id;
   const refs = [l1, l2, l3];
@@ -32,15 +44,17 @@ function compute_commissions(order, profiles, rules) {
 }
 
 const profiles = [
-  { id: 'A', seed_code: 'A', referrer_id: null },
-  { id: 'B', seed_code: 'B', referrer_id: 'A' },
-  { id: 'C', seed_code: 'C', referrer_id: 'B' },
+  { id: 'A', referrer_id: null },
+  { id: 'B', referrer_id: 'A' },
+  { id: 'C', referrer_id: 'B' },
 ];
+profiles.forEach((p) => rpc_activate_seed(p));
 
 const client = { id: 'D', referrer_id: null };
-activate_seed('C', client, profiles);
+rpc_activate_seed(client);
+rpc_set_referrer('C', client, profiles);
 
-const order = { id: 1, user_id: client.id, advisor_id: 'C', total_tnd: 100 };
+const order = { id: 1, user_id: client.id, total_tnd: 100 };
 
 const rules = [
   { level: 1, rate: 0.1, referrer_id: null },
@@ -50,6 +64,8 @@ const rules = [
 
 const commissions = compute_commissions(order, profiles.concat(client), rules);
 
+assert.ok(client.seed_code);
+assert.ok(client.seed_activated_at);
 assert.strictEqual(client.referrer_id, 'C');
 assert.strictEqual(commissions.length, 3);
 assert.deepStrictEqual(commissions.map((c) => c.referrer_id), ['C', 'B', 'A']);

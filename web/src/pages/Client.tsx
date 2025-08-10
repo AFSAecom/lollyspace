@@ -14,9 +14,33 @@ export default function Client() {
   const [page, setPage] = useState(1);
   const { data } = useSearchProducts({ ...search, page });
   const add = useCartStore((s) => s.add);
+  const [seedCode, setSeedCode] = useState<string | null>(null);
+
+  const activateSeed = async () => {
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const res = await fetch(`${baseUrl}/rest/v1/rpc/rpc_activate_seed`, {
+      method: 'POST',
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (res.ok) {
+      const code = await res.json();
+      setSeedCode(code as string);
+    }
+  };
 
   return (
     <div className="space-y-4">
+      <div>
+        {seedCode ? (
+          <div>Your seed code: {seedCode}</div>
+        ) : (
+          <button onClick={activateSeed}>Devenir Seed</button>
+        )}
+      </div>
       <SearchBarDual
         onSearch={(value) => {
           setSearch(value);

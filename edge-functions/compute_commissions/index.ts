@@ -13,11 +13,12 @@ serve(async (req) => {
     const { order_id } = bodySchema.parse(await req.json());
 
     const order = await sql`
-      select o.id, o.user_id as referee_id, o.advisor_id as l1, o.total_tnd,
-             p.referrer_id as l2, p2.referrer_id as l3
+      select o.id, o.user_id as referee_id, o.total_tnd,
+             p.referrer_id as l1, p1.referrer_id as l2, p2.referrer_id as l3
       from orders o
-      left join profiles p on p.id = o.advisor_id
-      left join profiles p2 on p2.id = p.referrer_id
+      left join profiles p on p.id = o.user_id
+      left join profiles p1 on p1.id = p.referrer_id
+      left join profiles p2 on p2.id = p1.referrer_id
       where o.id = ${order_id}
     `;
     if (order.length === 0) {
