@@ -7,6 +7,7 @@ import AdminProducts from './pages/AdminProducts';
 import AdminPromotions from './pages/AdminPromotions';
 import AdminStocks from './pages/AdminStocks';
 import AdminCommissions from './pages/AdminCommissions';
+import AdminCommissionRules from './pages/AdminCommissionRules';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/admin/promotions" element={<AdminPromotions />} />
           <Route path="/admin/stocks" element={<AdminStocks />} />
           <Route path="/admin/commissions" element={<AdminCommissions />} />
+          <Route path="/admin/commission-rules" element={<AdminCommissionRules />} />
           </Routes>
         </main>
       </div>
