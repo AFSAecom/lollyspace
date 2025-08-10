@@ -11,9 +11,10 @@ export interface OrderItem {
   id: number;
   order_id: number;
   product_variant_id: number;
-  quantity: number;
+  qty: number;
   unit_price_tnd: number;
   discount_tnd: number;
+  total_line_tnd: number;
 }
 
 export interface AdminSetting {

@@ -56,10 +56,10 @@ export default function Client() {
             variants={p.variants || []}
             onAdd={(v: ProductVariant) => {
               const item: CartItem = {
-                id: p.id,
-                name: p.inspired_name,
                 product_variant_id: v.id,
-                price_tnd: v.priceTnd,
+                name: p.inspired_name,
+                qty: 1,
+                unit_price_tnd: v.price_tnd,
                 discount_tnd: 0,
               };
               add(item);

@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import type { CartItem } from '@/types/cart';
 
 interface CartState {
-  items: (CartItem & { quantity: number })[];
+  items: CartItem[];
   add: (item: CartItem) => void;
-  update: (product_variant_id: number, quantity: number) => void;
+  update: (product_variant_id: number, qty: number) => void;
   remove: (product_variant_id: number) => void;
   reset: () => void;
 }
@@ -20,20 +20,20 @@ export const useCartStore = create<CartState>((set) => ({
         return {
           items: state.items.map((i) =>
             i.product_variant_id === item.product_variant_id
-              ? { ...i, quantity: i.quantity + 1 }
+              ? { ...i, qty: i.qty + item.qty }
               : i,
           ),
         };
       }
-      return { items: [...state.items, { ...item, quantity: 1 }] };
+      return { items: [...state.items, item] };
     }),
-  update: (product_variant_id, quantity) =>
+  update: (product_variant_id, qty) =>
     set((state) => ({
       items: state.items
         .map((i) =>
-          i.product_variant_id === product_variant_id ? { ...i, quantity } : i,
+          i.product_variant_id === product_variant_id ? { ...i, qty } : i,
         )
-        .filter((i) => i.quantity > 0),
+        .filter((i) => i.qty > 0),
     })),
   remove: (product_variant_id) =>
     set((state) => ({

@@ -130,7 +130,7 @@ create table public.cart_items (
   id bigserial primary key,
   cart_id uuid references public.carts on delete cascade,
   product_variant_id bigint references public.product_variants on delete cascade,
-  quantity integer not null default 1,
+  qty integer not null default 1,
   inserted_at timestamptz default now()
 );
 
@@ -203,9 +203,10 @@ create table public.order_items (
   id bigserial primary key,
   order_id bigint references public.orders on delete cascade,
   product_variant_id bigint references public.product_variants on delete restrict,
-  quantity integer not null,
+  qty integer not null,
   unit_price_tnd numeric(10,2) not null,
-  discount_tnd numeric(10,2) not null default 0
+  discount_tnd numeric(10,2) not null default 0,
+  total_line_tnd numeric(10,2) not null
 );
 
 create index order_items_order_id_idx on public.order_items(order_id);

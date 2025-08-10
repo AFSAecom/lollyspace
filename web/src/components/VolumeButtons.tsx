@@ -14,7 +14,7 @@ export default function VolumeButtons({ variants, onSelect }: Props) {
           onClick={() => onSelect(v)}
           className="px-2 py-1 border rounded"
         >
-          {v.sizeMl} ml - {v.priceTnd} TND
+          {v.size_ml} ml - {v.price_tnd} TND
         </button>
       ))}
     </div>
