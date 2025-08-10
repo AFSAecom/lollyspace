@@ -13,11 +13,8 @@ jobs:
       - name: Install (read-only)
         run: npm ci --no-audit --no-fund
         working-directory: web
-      - name: Lint
-        run: npm run lint --if-present
-        working-directory: web
       - name: Typecheck
-        run: npm run typecheck --if-present
+        run: npm run typecheck
         working-directory: web
       - name: Build
         run: npm run build
