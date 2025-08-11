@@ -15,16 +15,19 @@ jobs:
         id: health
         run: |
           status=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTHCHECK_URL")
+          timestamp=$(date -Iseconds)
           echo "status=$status" >> $GITHUB_OUTPUT
+          echo "timestamp=$timestamp" >> $GITHUB_OUTPUT
       - name: Create issue if down
         if: steps.health.outputs.status != '200'
         uses: actions/github-script@v7
         with:
           script: |
             const status = '${{ steps.health.outputs.status }}';
+            const timestamp = '${{ steps.health.outputs.timestamp }}';
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: 'Uptime alert',
-              body: `Health check failed with status ${status}.`
+              body: `Health check failed with status ${status} at ${timestamp}.`
             })
