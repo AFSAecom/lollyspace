@@ -1,7 +1,19 @@
 {
   "name": "lollyspace-tests",
   "version": "1.0.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "test": "node tests/apply_promotions.test.js && node tests/seed_commissions.test.js && node tests/commissions_export.test.js && node tests/checkout.test.js && node tests/search_products.test.js && node --test tests/unit/promo_engine.test.ts"
+  },
+  "devDependencies": {
+    "eslint": "8.57.1",
+    "@eslint/js": "8.57.1",
+    "@typescript-eslint/parser": "7.18.0",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "eslint-plugin-jsx-a11y": "6.10.2"
   }
 }

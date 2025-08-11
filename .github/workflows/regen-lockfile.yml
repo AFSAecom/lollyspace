@@ -1,0 +1,45 @@
+name: Regen lockfile and push
+on:
+  push:
+    branches: [ codex/update-package.json-for-node-20-and-dependencies ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use Node 20 and npmjs registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Ensure npm uses npmjs
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          cat .npmrc
+      - name: Clean node_modules and lockfile
+        run: rm -rf node_modules package-lock.json
+      - name: Install to regenerate lockfile
+        run: npm install
+      - name: Verify CI and build
+        run: |
+          npm ci
+          npm run build --if-present
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .npmrc package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: fix npm registry, align eslint@8 with @typescript-eslint@7, regenerate lockfile"
+            git push
+          else
+            echo "No changes to commit."
+
