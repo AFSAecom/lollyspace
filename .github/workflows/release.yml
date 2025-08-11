@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Tag à relivrer (ex: v1.0.0). Laisser vide = utiliser la ref courante.'
+        description: 'Tag à relivrer (ex: v1.0.0). Laisser vide = utiliser le dernier tag.'
         required: false
         type: string
 
@@ -17,25 +17,22 @@ jobs:
   build_and_release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # si déclenché manuellement, on se place sur le tag fourni
-          ref: ${{ github.event.inputs.ref || '' }}
 
-      - name: Determine ref/tag
+      - name: Resolve tag (input or latest)
         id: r
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${{ github.event.inputs.ref }}" ]]; then
-            ref="${{ github.event.inputs.ref }}"
-          else
-            ref="${GITHUB_REF_NAME:-}"
+          ref="${{ github.event.inputs.ref }}"
+          if [[ -z "$ref" ]]; then
+            ref=$(git describe --tags --abbrev=0 --match "v*")
           fi
+          git checkout "$ref"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          echo "Ref to release: $ref"
+          echo "Using ref: $ref"
 
       - name: Use Node 20
         uses: actions/setup-node@v4
