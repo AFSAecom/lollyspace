@@ -83,6 +83,6 @@ curl http://localhost:8080/healthz
 
 Tag and push the `v1.0.0` release:
 
-```bash
-npm run release:tag
-```
+- Navigate to **Actions ▸ Create Tag (manual) ▸ Run workflow**.
+- Leave the version blank to default to `web/package.json` (currently `1.0.0`).
+- After the workflow succeeds, monitor the **Release** job, which builds artifacts and creates the draft release with `web-dist-v1.0.0.zip` and the changelog.
