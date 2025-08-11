@@ -2,6 +2,7 @@
   "name": "lollyspace-tests",
   "version": "1.0.0",
   "scripts": {
-    "test": "node tests/apply_promotions.test.js && node tests/seed_commissions.test.js && node tests/commissions_export.test.js && node tests/checkout.test.js && node tests/search_products.test.js"
+    "test": "node tests/apply_promotions.test.js && node tests/seed_commissions.test.js && node tests/commissions_export.test.js && node tests/checkout.test.js && node tests/search_products.test.js",
+    "release:tag": "git tag v1.0.0 && git push origin v1.0.0"
   }
 }
