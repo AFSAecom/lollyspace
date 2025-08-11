@@ -9,12 +9,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "postbuild": "node scripts/write-version-json.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test:e2e": "npx --yes @playwright/test test --reporter=line",
     "test:unit": "vitest run",
     "lint": "eslint src --ext .ts,.tsx",
-    "health": "curl -f http://localhost:5173/healthz"
+    "health": "curl -f http://localhost:5173/healthz",
+    "release:tag": "git tag v$npm_package_version && git push origin v$npm_package_version"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
