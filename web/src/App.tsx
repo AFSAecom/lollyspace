@@ -43,7 +43,7 @@ export default function App() {
           <Route path="/admin/commission-rules" element={<AdminCommissionRules />} />
         </Routes>
       </main>
-      <footer className="p-4 text-center text-xs text-neutral-500">{version}</footer>
+      <footer className="p-4 text-center text-xs text-neutral-500">Version {version}</footer>
     </div>
   );
 }
