@@ -26,13 +26,106 @@ jobs:
         run: npm run lint --if-present
       - name: Typecheck
         run: npm run typecheck --if-present
-      - name: Unit tests
-        run: npm run test:unit
       - name: Build
         run: npm run build
 
-  e2e:
+  unit:
     needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      - name: Install (read-only)
+        run: |
+          npm ci --no-audit --no-fund
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Setup must not modify tracked files"; git status --porcelain; exit 1;
+          fi
+        working-directory: web
+      - name: Unit tests
+        run: npm run test:unit
+
+  smoke:
+    needs: [build, unit]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install deps (app)
+        run: npm ci --no-audit --no-fund
+        working-directory: web
+
+      - name: Build (for preview server)
+        run: npm run build
+        working-directory: web
+
+      - name: Configure npm registry + retries
+        run: |
+          npm config set registry "https://registry.npmjs.org/"
+          npm config set @playwright:registry "https://registry.npmjs.org/"
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-maxtimeout 60000
+        working-directory: web
+
+      - id: npm-registry
+        name: Check npm registry access (playwright)
+        shell: bash
+        run: |
+          set -e
+          URL="https://registry.npmjs.org/@playwright%2Ftest"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+          echo "http_code=$CODE"
+          if [ "$CODE" = "200" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "status=$CODE" >> "$GITHUB_OUTPUT"
+          fi
+        working-directory: web
+
+      - name: Install Playwright browsers
+        if: steps.npm-registry.outputs.ok == 'true'
+        run: npx --yes playwright@1.54.2 install --with-deps
+        working-directory: web
+
+      - name: Run smoke tests
+        if: steps.npm-registry.outputs.ok == 'true'
+        run: |
+          npx --yes @playwright/test@1.54.2 test tests/e2e/smoke.spec.ts --reporter=line
+        working-directory: web
+
+      - name: Skip smoke (npm registry blocked)
+        if: steps.npm-registry.outputs.ok != 'true'
+        run: echo "::warning::Smoke tests skipped: npm registry returned status ${{ steps.npm-registry.outputs.status || 'unknown' }}."
+        working-directory: web
+
+      - name: Upload Playwright report
+        if: always() && steps.npm-registry.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-smoke
+          path: |
+            web/playwright-report
+            web/test-results
+          retention-days: 7
+
+  e2e:
+    needs: [build, unit]
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -102,3 +195,21 @@ jobs:
             web/playwright-report
             web/test-results
           retention-days: 7
+
+  release-notes:
+    if: github.event_name == 'pull_request'
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate changelog
+        run: npx --yes conventional-changelog-cli@2.2.2 -p conventionalcommits -r 0 > CHANGELOG.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: CHANGELOG.md
