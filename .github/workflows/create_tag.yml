@@ -1,0 +1,38 @@
+name: create tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Tag version (e.g. 1.2.3)'
+        required: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: get-version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version=$(jq -r '.version' web/package.json)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Create tag
+        env:
+          TAG: v${{ steps.get-version.outputs.version }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git tag "$TAG"
+          fi
+          git push origin "$TAG"
+      - name: Release instructions
+        env:
+          TAG: v${{ steps.get-version.outputs.version }}
+        run: echo "Tag $TAG pushed. release.yml will build the project and create a draft release."
