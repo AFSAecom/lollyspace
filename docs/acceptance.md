@@ -46,11 +46,12 @@ On failure, screenshots and videos are saved to `web/test-results/` for inspecti
 5. Verify new inventory entries appear in the product list.
 
 ### Promotions
-1. Log in as an administrator.
-2. Go to **Marketing → Promotions**.
-3. Create a new promotion with a discount code and expiry date.
-4. Apply the code during checkout to confirm the discount is applied.
-5. Ensure the promotion appears in the promotions list and can be toggled on/off.
+1. Ensure `PROMO_V2_ENABLED` is set to `true`.
+2. Log in as an administrator.
+3. Go to **Marketing → Promotions** and create an automatic promotion for a product.
+4. Add the product to the cart and verify the discount applies without entering a code.
+5. Create a second promotion with a larger discount for the same product and confirm the higher discount is applied.
+6. Disable the promotions and confirm the discount no longer appears.
 
 ### Dashboards
 1. Sign in to the dashboard as a merchant.

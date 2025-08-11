@@ -57,6 +57,17 @@ On failure, screenshots and videos are stored under `web/test-results/` in a fol
 - [Acceptance Testing Guide](docs/acceptance.md)
 - [UAT Checklist v1](docs/uat_v1.md)
 
+## Automatic Promotions
+
+Automatic promotion calculation is gated by the `PROMO_V2_ENABLED` feature flag. Set the flag on both the server and web client to enable it.
+
+For staging, add the following to `.env.staging` and `web/.env`:
+
+```bash
+PROMO_V2_ENABLED=true
+VITE_PROMO_V2_ENABLED=true
+```
+
 ## Deployment
 
 ### Deploy on Vercel
