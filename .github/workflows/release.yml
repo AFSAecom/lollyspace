@@ -1,12 +1,11 @@
 name: release
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Tag à relivrer (ex: v1.0.0). Laisser vide = utiliser le dernier tag.'
+        description: 'Tag à relivrer (ex: v1.0.0). Laisser vide = dernier tag v*'
         required: false
         type: string
 
@@ -16,23 +15,52 @@ permissions:
 jobs:
   build_and_release:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Resolve tag (input or latest)
+      - name: Fetch tags
+        run: |
+          set -euxo pipefail
+          git fetch --tags --force --prune
+          echo "::group::Tags présents"
+          git tag -l | sort -V || true
+          echo "::endgroup::"
+
+      - name: Resolve tag (input or latest v*)
         id: r
         shell: bash
         run: |
           set -euo pipefail
           ref="${{ github.event.inputs.ref }}"
-          if [[ -z "$ref" ]]; then
-            ref=$(git describe --tags --abbrev=0 --match "v*")
+          if [[ -z "${ref}" ]]; then
+            # dernier tag qui matche v*
+            ref="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
           fi
-          git checkout "$ref"
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          echo "Using ref: $ref"
+          if [[ -z "${ref}" ]]; then
+            echo "::error::Aucun tag fourni et aucun tag v* trouvé. Crée d'abord un tag via Actions → Create Tag (manual)."
+            exit 1
+          fi
+          # s’assurer que le tag existe localement (sinon le fetch depuis origin)
+          if ! git rev-parse -q --verify "${ref}^{tag}" >/dev/null; then
+            echo "Tag ${ref} introuvable en local, tentative de fetch ciblé…"
+            git fetch origin "refs/tags/${ref}:refs/tags/${ref}" || true
+          fi
+          if ! git rev-parse -q --verify "${ref}^{tag}" >/dev/null; then
+            echo "::error::Le tag ${ref} n’existe pas dans le dépôt. Vérifie son orthographe (ex: v1.0.0)."
+            exit 1
+          fi
+          echo "Tag retenu : ${ref}"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout tag
+        run: |
+          set -euxo pipefail
+          git checkout -f "${{ steps.r.outputs.ref }}"
 
       - name: Use Node 20
         uses: actions/setup-node@v4
@@ -42,7 +70,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --no-audit --no-fund --progress=false
         working-directory: web
 
       - name: Build
@@ -52,8 +80,10 @@ jobs:
       - name: Zip dist
         shell: bash
         run: |
+          set -euo pipefail
           cd web
           zip -r "../web-dist-${{ steps.r.outputs.ref }}.zip" dist
+          ls -lh ..
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v2
@@ -63,4 +93,3 @@ jobs:
           name: ${{ steps.r.outputs.ref }}
           files: |
             web-dist-${{ steps.r.outputs.ref }}.zip
-
