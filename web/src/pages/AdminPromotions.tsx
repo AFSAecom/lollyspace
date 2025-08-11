@@ -1,101 +1,61 @@
+import { useState } from 'react';
 import {
   usePromotions,
-  updatePromotion,
+  setPromotionActive,
   deletePromotion,
   savePromotion,
-  PromotionInput,
-  Promotion,
-  DiscountCondition,
-  TwoPlusOneCondition,
-  PackCondition,
-  PromotionId,
 } from '../services/promotions';
-import { useState } from 'react';
+import { Promotion, PromotionId } from '@/types/promotion';
+import {
+  PromotionFormValues,
+  mapFormToPayload,
+} from './adminPromotionsSchema';
 
-type PromotionWithApi = Promotion;
+function PromotionForm({ promotion, onClose }: { promotion?: Promotion; onClose: () => void }) {
+  const [form, setForm] = useState<PromotionFormValues>({
+    id: promotion?.id,
+    name: promotion?.name || '',
+    type: promotion?.type || 'discount',
+    combinable: promotion?.combinable ?? true,
+    priority: String(promotion?.priority ?? 0),
+    startsAt: promotion ? promotion.starts_at.slice(0, 10) : '',
+    endsAt: promotion ? promotion.ends_at.slice(0, 10) : '',
+    active: promotion?.active ?? true,
+    scopeGender: promotion?.scope.genders?.join(',') || '',
+    scopeFamily: promotion?.scope.families?.join(',') || '',
+    scopeProducts: promotion?.scope.products?.join(',') || '',
+    scopeVariants: promotion?.scope.variants?.join(',') || '',
+    params: promotion?.items[0]?.params ? JSON.stringify(promotion.items[0].params) : '',
+  });
 
-function PromotionForm({
-  promotion,
-  onClose,
-}: {
-  promotion?: PromotionWithApi;
-  onClose: () => void;
-}) {
-  const [type, setType] = useState<PromotionInput['type']>(
-    promotion?.type || 'discount',
-  );
-  const [productVariantId, setProductVariantId] = useState(
-    promotion &&
-    (promotion.type === 'discount' || promotion.type === 'two_plus_one')
-      ? String(
-          (promotion.condition_json as DiscountCondition | TwoPlusOneCondition)
-            .product_variant_id,
-        )
-      : '',
-  );
-  const [percent, setPercent] = useState(
-    promotion && promotion.type === 'discount'
-      ? String((promotion.condition_json as DiscountCondition).percent)
-      : '',
-  );
-  const [packIds, setPackIds] = useState(
-    promotion && promotion.type === 'pack'
-      ? (promotion.condition_json as PackCondition).product_variant_ids.join(',')
-      : '',
-  );
-  const [packPrice, setPackPrice] = useState(
-    promotion && promotion.type === 'pack'
-      ? String((promotion.condition_json as PackCondition).price)
-      : '',
-  );
-  const [startsAt, setStartsAt] = useState(
-    promotion ? promotion.starts_at.slice(0, 10) : '',
-  );
-  const [endsAt, setEndsAt] = useState(
-    promotion ? promotion.ends_at.slice(0, 10) : '',
-  );
-  const [active, setActive] = useState(promotion?.active ?? true);
+  const handleChange = (field: keyof PromotionFormValues, value: any) => {
+    setForm((f) => ({ ...f, [field]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    let condition_json: DiscountCondition | TwoPlusOneCondition | PackCondition;
-    if (type === 'discount') {
-      condition_json = {
-        product_variant_id: Number(productVariantId),
-        percent: Number(percent),
-      };
-    } else if (type === 'two_plus_one') {
-      condition_json = { product_variant_id: Number(productVariantId) };
-    } else {
-      condition_json = {
-        product_variant_ids: packIds
-          .split(',')
-          .map((id: string) => Number(id.trim()))
-          .filter(Boolean),
-        price: Number(packPrice),
-      };
-    }
-    await savePromotion({
-      id: promotion?.id,
-      type,
-      condition_json,
-      starts_at: new Date(startsAt).toISOString(),
-      ends_at: new Date(endsAt).toISOString(),
-      active,
-    });
+    const payload = mapFormToPayload(form);
+    await savePromotion(payload);
     onClose();
   };
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2">
       <label>
+        Nom
+        <input
+          className="border p-1 ml-2"
+          value={form.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          required
+        />
+      </label>
+      <label>
         Type
         <select
-          value={type}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-            setType(e.target.value as PromotionInput['type'])
-          }
           className="border p-1 ml-2"
+          value={form.type}
+          onChange={(e) => handleChange('type', e.target.value)}
           disabled={!!promotion}
         >
           <option value="discount">discount</option>
@@ -103,71 +63,32 @@ function PromotionForm({
           <option value="pack">pack</option>
         </select>
       </label>
-      {(type === 'discount' || type === 'two_plus_one') && (
-        <label>
-          Variant ID
-          <input
-            type="number"
-            value={productVariantId}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setProductVariantId(e.target.value)
-            }
-            className="border p-1 ml-2"
-            required
-          />
-        </label>
-      )}
-      {type === 'discount' && (
-        <label>
-          Percent
-          <input
-            type="number"
-            value={percent}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setPercent(e.target.value)
-            }
-            className="border p-1 ml-2"
-            required
-          />
-        </label>
-      )}
-      {type === 'pack' && (
-        <>
-          <label>
-            Variant IDs (comma)
-            <input
-              type="text"
-              value={packIds}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPackIds(e.target.value)
-              }
-              className="border p-1 ml-2"
-              required
-            />
-          </label>
-          <label>
-            Pack price
-            <input
-              type="number"
-              value={packPrice}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPackPrice(e.target.value)
-              }
-              className="border p-1 ml-2"
-              required
-            />
-          </label>
-        </>
-      )}
+      <label>
+        Combinable
+        <input
+          type="checkbox"
+          className="ml-2"
+          checked={form.combinable}
+          onChange={(e) => handleChange('combinable', e.target.checked)}
+        />
+      </label>
+      <label>
+        Priority
+        <input
+          type="number"
+          className="border p-1 ml-2"
+          value={form.priority}
+          onChange={(e) => handleChange('priority', e.target.value)}
+          required
+        />
+      </label>
       <label>
         Début
         <input
           type="date"
-          value={startsAt}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setStartsAt(e.target.value)
-          }
           className="border p-1 ml-2"
+          value={form.startsAt}
+          onChange={(e) => handleChange('startsAt', e.target.value)}
           required
         />
       </label>
@@ -175,11 +96,9 @@ function PromotionForm({
         Fin
         <input
           type="date"
-          value={endsAt}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setEndsAt(e.target.value)
-          }
           className="border p-1 ml-2"
+          value={form.endsAt}
+          onChange={(e) => handleChange('endsAt', e.target.value)}
           required
         />
       </label>
@@ -187,11 +106,49 @@ function PromotionForm({
         Actif
         <input
           type="checkbox"
-          checked={active}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setActive(e.target.checked)
-          }
           className="ml-2"
+          checked={form.active}
+          onChange={(e) => handleChange('active', e.target.checked)}
+        />
+      </label>
+      <label>
+        Scope gender
+        <input
+          className="border p-1 ml-2"
+          value={form.scopeGender}
+          onChange={(e) => handleChange('scopeGender', e.target.value)}
+        />
+      </label>
+      <label>
+        Scope family
+        <input
+          className="border p-1 ml-2"
+          value={form.scopeFamily}
+          onChange={(e) => handleChange('scopeFamily', e.target.value)}
+        />
+      </label>
+      <label>
+        Scope products
+        <input
+          className="border p-1 ml-2"
+          value={form.scopeProducts}
+          onChange={(e) => handleChange('scopeProducts', e.target.value)}
+        />
+      </label>
+      <label>
+        Scope variants
+        <input
+          className="border p-1 ml-2"
+          value={form.scopeVariants}
+          onChange={(e) => handleChange('scopeVariants', e.target.value)}
+        />
+      </label>
+      <label>
+        Params JSON
+        <textarea
+          className="border p-1 ml-2"
+          value={form.params}
+          onChange={(e) => handleChange('params', e.target.value)}
         />
       </label>
       <div className="flex gap-2">
@@ -208,9 +165,7 @@ function PromotionForm({
 
 export default function AdminPromotions() {
   const { data: promotions, refetch } = usePromotions();
-  const [editing, setEditing] = useState<PromotionWithApi | null | undefined>(
-    undefined,
-  );
+  const [editing, setEditing] = useState<Promotion | null | undefined>(undefined);
 
   const handleEdit = (id: PromotionId) => {
     const promo = promotions?.find((p) => p.id === id);
@@ -223,7 +178,13 @@ export default function AdminPromotions() {
   };
 
   const handleToggle = async (id: PromotionId, nextActive: boolean) => {
-    await updatePromotion(id, nextActive);
+    await setPromotionActive(id, nextActive);
+    refetch();
+  };
+
+  const handleDuplicate = async (p: Promotion) => {
+    const copy = { ...p, id: undefined, name: `${p.name} (copy)`, active: false };
+    await savePromotion(copy);
     refetch();
   };
 
@@ -250,7 +211,7 @@ export default function AdminPromotions() {
       <ul className="mt-4 flex flex-col gap-1">
         {promotions?.map((p) => (
           <li key={p.id} className="flex justify-between">
-            <span>{p.type}</span>
+            <span>{p.name}</span>
             <div className="flex gap-2">
               <button
                 onClick={() => handleToggle(p.id, !p.active)}
@@ -265,6 +226,12 @@ export default function AdminPromotions() {
                 Éditer
               </button>
               <button
+                onClick={() => handleDuplicate(p)}
+                className="text-sm text-primary"
+              >
+                Dupliquer
+              </button>
+              <button
                 onClick={() => handleDelete(p.id)}
                 className="text-sm text-primary"
               >
@@ -277,4 +244,3 @@ export default function AdminPromotions() {
     </div>
   );
 }
-
