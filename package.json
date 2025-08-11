@@ -1,6 +1,9 @@
 {
   "name": "lollyspace-tests",
   "version": "1.0.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "test": "node tests/apply_promotions.test.js && node tests/seed_commissions.test.js && node tests/commissions_export.test.js && node tests/checkout.test.js && node tests/search_products.test.js && node --test tests/unit/promo_engine.test.ts"
   }
