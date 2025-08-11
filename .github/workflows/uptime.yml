@@ -1,0 +1,30 @@
+name: uptime
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+    steps:
+      - name: Check service
+        id: health
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTHCHECK_URL")
+          echo "status=$status" >> $GITHUB_OUTPUT
+      - name: Create issue if down
+        if: steps.health.outputs.status != '200'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.health.outputs.status }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Uptime alert',
+              body: `Health check failed with status ${status}.`
+            })
