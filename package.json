@@ -6,5 +6,13 @@
   },
   "scripts": {
     "test": "node tests/apply_promotions.test.js && node tests/seed_commissions.test.js && node tests/commissions_export.test.js && node tests/checkout.test.js && node tests/search_products.test.js && node --test tests/unit/promo_engine.test.ts"
+  },
+  "devDependencies": {
+    "eslint": "8.57.1",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0"
+  },
+  "overrides": {
+    "eslint": "8.57.1"
   }
 }
