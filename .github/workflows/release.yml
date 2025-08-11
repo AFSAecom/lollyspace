@@ -23,11 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch tags
+      - name: Fetch & list tags
         run: |
           set -euxo pipefail
           git fetch --tags --force --prune
-          echo "::group::Tags présents"
+          echo "::group::Tags:"
           git tag -l | sort -V || true
           echo "::endgroup::"
 
@@ -38,29 +38,28 @@ jobs:
           set -euo pipefail
           ref="${{ github.event.inputs.ref }}"
           if [[ -z "${ref}" ]]; then
-            # dernier tag qui matche v*
             ref="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
           fi
           if [[ -z "${ref}" ]]; then
-            echo "::error::Aucun tag fourni et aucun tag v* trouvé. Crée d'abord un tag via Actions → Create Tag (manual)."
+            echo "::error::Aucun tag fourni et aucun tag 'v*' trouvé. Crée d'abord un tag via Actions → Create Tag (manual)."
             exit 1
           fi
-          # s’assurer que le tag existe localement (sinon le fetch depuis origin)
           if ! git rev-parse -q --verify "${ref}^{tag}" >/dev/null; then
-            echo "Tag ${ref} introuvable en local, tentative de fetch ciblé…"
+            echo "Tag ${ref} introuvable localement, fetch ciblé…"
             git fetch origin "refs/tags/${ref}:refs/tags/${ref}" || true
           fi
           if ! git rev-parse -q --verify "${ref}^{tag}" >/dev/null; then
-            echo "::error::Le tag ${ref} n’existe pas dans le dépôt. Vérifie son orthographe (ex: v1.0.0)."
+            echo "::error::Le tag ${ref} n’existe pas dans le dépôt (orthographe ? ex: v1.0.0)."
             exit 1
           fi
-          echo "Tag retenu : ${ref}"
           echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "Tag retenu : ${ref}"
 
       - name: Checkout tag
         run: |
           set -euxo pipefail
           git checkout -f "${{ steps.r.outputs.ref }}"
+          git rev-parse --short HEAD
 
       - name: Use Node 20
         uses: actions/setup-node@v4
@@ -69,9 +68,31 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Install deps
-        run: npm ci --no-audit --no-fund --progress=false
+      - name: Configure npm registry
+        run: |
+          set -euxo pipefail
+          npm config set registry "https://registry.npmjs.org/"
+          npm config set audit false
+          npm config set fund false
+          npm config set progress false
         working-directory: web
+
+      - name: Install deps (with retries)
+        shell: bash
+        working-directory: web
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            echo "npm ci – tentative $i…"
+            if npm ci --no-audit --no-fund --progress=false; then
+              echo "npm ci OK"
+              exit 0
+            fi
+            echo "Échec npm ci (tentative $i). Attente $((i*10))s puis retry…"
+            sleep $((i*10))
+          done
+          echo "::error::npm ci a échoué après 3 tentatives (problème réseau/403 ?)."
+          exit 1
 
       - name: Build
         run: npm run build
@@ -80,7 +101,7 @@ jobs:
       - name: Zip dist
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           cd web
           zip -r "../web-dist-${{ steps.r.outputs.ref }}.zip" dist
           ls -lh ..
