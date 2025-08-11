@@ -1,5 +1,7 @@
 import { applyPromotions, type PromotionItem } from './promotions';
 
+const promoEnabled = import.meta.env.VITE_PROMO_V2_ENABLED === 'true';
+
 const baseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const headers = {
   apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
@@ -14,11 +16,13 @@ export async function checkoutAdvisor(payload: {
     | { first_name: string; last_name: string; phone: string };
   items: PromotionItem[];
 }) {
-  const promo = await applyPromotions(payload.items);
+  const pricedItems = promoEnabled
+    ? (await applyPromotions(payload.items)).items
+    : payload.items;
   const res = await fetch(`${baseUrl}/functions/v1/checkout_advisor`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ ...payload, items: promo.items }),
+    body: JSON.stringify({ ...payload, items: pricedItems }),
   });
   if (!res.ok) {
     throw new Error(await res.text());

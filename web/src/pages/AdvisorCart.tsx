@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useCartStore } from '@/stores/cart';
+import useCartPricing from '@/hooks/useCartPricing';
 import { checkoutAdvisorWithOffline } from '@/services/checkout';
 import type { PromotionItem } from '@/services/promotions';
 
 export default function AdvisorCart() {
-  const { items, update, remove, reset } = useCartStore();
+  const { update, remove, reset } = useCartStore();
+  const { items, total } = useCartPricing();
   const [loading, setLoading] = useState(false);
   const handleCheckout = async () => {
     setLoading(true);
@@ -40,8 +42,25 @@ export default function AdvisorCart() {
             <div>
               <p>{i.name}</p>
               <p className="text-sm text-muted">
-                {i.qty} × {i.unit_price_tnd} TND
+                {i.qty} ×{' '}
+                {i.discount_tnd ? (
+                  <>
+                    <span className="line-through">
+                      {i.unit_price_tnd} TND
+                    </span>{' '}
+                    <span>
+                      {(i.unit_price_tnd - i.discount_tnd).toFixed(3)} TND
+                    </span>
+                  </>
+                ) : (
+                  <span>{i.unit_price_tnd} TND</span>
+                )}
               </p>
+              {i.discount_tnd ? (
+                <p className="text-sm text-green-700">
+                  -{(i.discount_tnd * i.qty).toFixed(3)} TND
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -67,6 +86,9 @@ export default function AdvisorCart() {
           </div>
         ))}
       </div>
+      <p className="mt-4 text-right font-semibold" aria-live="polite">
+        Total: {total.toFixed(3)} TND
+      </p>
       <button
         disabled={items.length === 0 || loading}
         onClick={handleCheckout}
