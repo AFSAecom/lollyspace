@@ -44,3 +44,8 @@ This executes four scenarios:
 4. Referral purchase generates commissions and an admin pays them.
 
 On failure, screenshots and videos are stored under `web/test-results/` in a folder named for the failing test.
+
+## Documentation
+
+- [Acceptance Testing Guide](docs/acceptance.md)
+- [UAT Checklist v1](docs/uat_v1.md)
