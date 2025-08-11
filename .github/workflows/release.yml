@@ -1,42 +1,69 @@
 name: release
-
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Tag à relivrer (ex: v1.0.0). Laisser vide = utiliser la ref courante.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
-  release:
+  build_and_release:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # si déclenché manuellement, on se place sur le tag fourni
+          ref: ${{ github.event.inputs.ref || '' }}
+
+      - name: Determine ref/tag
+        id: r
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ github.event.inputs.ref }}" ]]; then
+            ref="${{ github.event.inputs.ref }}"
+          else
+            ref="${GITHUB_REF_NAME:-}"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Ref to release: $ref"
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
-      - name: Install
-        run: npm ci --no-audit --no-fund
+
+      - name: Install deps
+        run: npm ci
+        working-directory: web
+
       - name: Build
         run: npm run build
+        working-directory: web
+
       - name: Zip dist
-        run: zip -r "web-dist-${{ github.ref_name }}.zip" dist
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-dist-${{ github.ref_name }}
-          path: web/web-dist-${{ github.ref_name }}.zip
-      - name: Release
+        shell: bash
+        run: |
+          cd web
+          zip -r "../web-dist-${{ steps.r.outputs.ref }}.zip" dist
+
+      - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: web/web-dist-${{ github.ref_name }}.zip
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body_path: CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.r.outputs.ref }}
+          name: ${{ steps.r.outputs.ref }}
+          files: |
+            web-dist-${{ steps.r.outputs.ref }}.zip
 
