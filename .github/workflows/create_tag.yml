@@ -1,38 +1,54 @@
-name: create tag
-
+name: Create Tag (manual)
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Tag version (e.g. 1.2.3)'
+        description: 'Version (ex: 1.0.0). Laisser vide pour lire web/package.json'
         required: false
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - id: get-version
+          persist-credentials: true
+
+      - name: Determine version
+        id: v
+        shell: bash
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            version="${{ github.event.inputs.version }}"
+          set -euo pipefail
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            ver="${{ github.event.inputs.version }}"
           else
-            version=$(jq -r '.version' web/package.json)
+            ver=$(node -e "console.log(require('./web/package.json').version)")
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Create tag
-        env:
-          TAG: v${{ steps.get-version.outputs.version }}
+          echo "Version: $ver"
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          echo "tag=v$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Configure git
         run: |
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists"
-          else
-            git tag "$TAG"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Create tag if missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.v.outputs.tag }}"
+          echo "Target tag: $tag"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists. Nothing to do."
+            exit 0
           fi
-          git push origin "$TAG"
-      - name: Release instructions
-        env:
-          TAG: v${{ steps.get-version.outputs.version }}
-        run: echo "Tag $TAG pushed. release.yml will build the project and create a draft release."
+          git tag "$tag" -m "Release $tag"
+          git push origin "$tag"
+          echo "Pushed $tag. The release workflow will start."
