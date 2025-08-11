@@ -8,6 +8,7 @@ coverage/
 src/generated/**
 # Allow npm lockfile in web
 !web/package-lock.json
+web/public/version.json
 
 # Environment files
 .env
