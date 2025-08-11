@@ -78,3 +78,11 @@ Verify the health endpoint:
 ```bash
 curl http://localhost:8080/healthz
 ```
+
+## Release
+
+Tag and push the `v1.0.0` release:
+
+```bash
+npm run release:tag
+```
