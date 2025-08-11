@@ -56,3 +56,25 @@ On failure, screenshots and videos are stored under `web/test-results/` in a fol
 
 - [Acceptance Testing Guide](docs/acceptance.md)
 - [UAT Checklist v1](docs/uat_v1.md)
+
+## Deployment
+
+### Deploy on Vercel
+Use the included `vercel.json` which builds the `web` package and rewrites all routes to `index.html` for single‑page app fallback. Import the repository on Vercel and deploy.
+
+### Deploy on Netlify
+`netlify.toml` configures a Vite build from the `web` directory and a `/*` to `/index.html` redirect. Connect the repo on Netlify and trigger a deploy.
+
+### Docker
+Build and run the container locally:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Verify the health endpoint:
+
+```bash
+curl http://localhost:8080/healthz
+```
