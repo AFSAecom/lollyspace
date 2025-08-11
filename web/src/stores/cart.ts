@@ -7,6 +7,9 @@ interface CartState {
   update: (product_variant_id: number, qty: number) => void;
   remove: (product_variant_id: number) => void;
   reset: () => void;
+  setPricing: (
+    priced: { product_variant_id: number; discount_tnd: number }[],
+  ) => void;
 }
 
 export const useCartStore = create<CartState>((set) => ({
@@ -42,4 +45,11 @@ export const useCartStore = create<CartState>((set) => ({
       ),
     })),
   reset: () => set({ items: [] }),
+  setPricing: (priced) =>
+    set((state) => ({
+      items: state.items.map((i) => {
+        const p = priced.find((pi) => pi.product_variant_id === i.product_variant_id);
+        return p ? { ...i, discount_tnd: p.discount_tnd } : { ...i, discount_tnd: 0 };
+      }),
+    })),
 }));

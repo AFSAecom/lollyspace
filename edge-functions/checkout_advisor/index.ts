@@ -3,6 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.2/mod.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.3.3/mod.js";
 
 const sql = postgres(Deno.env.get("DATABASE_URL")!, { ssl: "require" });
+const promoEnabled = Deno.env.get("PROMO_V2_ENABLED") === "true";
 
 const itemSchema = z.object({
   product_variant_id: z.number().int(),
@@ -31,20 +32,23 @@ serve(async (req) => {
 
     const advisorId = data.advisor_id;
 
-    const promoRes = await fetch(
-      new URL('/apply_promotions', req.url).toString(),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: data.items }),
-      },
-    );
-    if (!promoRes.ok) {
-      throw new Error(await promoRes.text());
+    let items = data.items;
+    if (promoEnabled) {
+      const promoRes = await fetch(
+        new URL('/apply_promotions', req.url).toString(),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: data.items }),
+        },
+      );
+      if (!promoRes.ok) {
+        throw new Error(await promoRes.text());
+      }
+      ({ items } = (await promoRes.json()) as {
+        items: z.infer<typeof itemSchema>[];
+      });
     }
-    const { items } = (await promoRes.json()) as {
-      items: z.infer<typeof itemSchema>[];
-    };
 
     const total = items.reduce(
       (sum: number, i: any) =>
