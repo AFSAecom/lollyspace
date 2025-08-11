@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test:e2e": "npx --yes @playwright/test test --reporter=line",
     "test:unit": "vitest run",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "health": "curl -f http://localhost:5173/healthz"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",

@@ -14,10 +14,17 @@ npm install
 cd web && npm install
 ```
 
-Create a `.env` file in `web/` with:
+Copy `.env.example` to `web/.env` and fill in:
 ```
 VITE_SUPABASE_URL=your-url
 VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SENTRY_DSN=your-sentry-dsn
+VITE_ANALYTICS_KEY=your-analytics-key
+```
+
+For staging deployments, start from `.env.staging`:
+```bash
+cp .env.staging web/.env
 ```
 
 ### Development
