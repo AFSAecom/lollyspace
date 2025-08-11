@@ -183,8 +183,7 @@ jobs:
 
       - name: Run E2E tests
         if: steps.npm-registry.outputs.ok == 'true'
-        run: |
-          npx --yes @playwright/test@1.54.2 test --reporter=line
+        run: npm run test:e2e
         working-directory: web
 
       - name: Skip E2E (npm registry blocked)
